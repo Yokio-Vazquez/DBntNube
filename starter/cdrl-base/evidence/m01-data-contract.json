@@ -7,7 +7,11 @@
     "make run"
   ],
   "results": {
-    "starterBase": "pending_team_execution"
+    "starterBase": "verified",
+    "makeSetup": "passed",
+    "makeVerify": "passed",
+    "makeRun": "passed",
+    "pytest": "5 passed, 2 warnings"
   },
   "assumptions": [
     "El equipo elegirá y documentará el lenguaje de la aplicación.",

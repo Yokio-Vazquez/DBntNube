@@ -33,4 +33,4 @@
 
 ## Commit
 
-SHA: completar después del commit.
+SHA: 5a1ea1a3898a43d4d48c5d526a3e6d7372d4197c (tag: week-01-final)
