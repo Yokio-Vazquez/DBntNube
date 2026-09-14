@@ -1,6 +1,6 @@
 {
   "assignmentId": "m02-relational-model",
-  "commitSha": "pending-final-commit-sha",
+  "commitSha": "bb0fb02ad36236a56bb5347e5a71f574edc5f111",
   "tag": "week-02-final",
   "commands": [
     "make setup",
@@ -13,8 +13,9 @@
     "migration": "idempotent by IF NOT EXISTS, ON CONFLICT and guarded constraint creation",
     "seed": "synthetic platforms, game-platform links and metric definitions",
     "parametrizedQueries": "three SQL queries with named parameters",
-    "makeVerify": "not executed in this Windows session because make is unavailable; verifier contract checked directly",
-    "makeRun": "PostgreSQL container started; Alembic execution requires rerun after synchronizing the persisted volume credentials"
+    "makeVerify": "passed",
+    "makeRun": "passed",
+    "pytest": "12 passed, 0 failed"
   },
   "schema": {
     "tables": ["games", "game_metrics", "platforms", "game_platforms", "metric_definitions"],
