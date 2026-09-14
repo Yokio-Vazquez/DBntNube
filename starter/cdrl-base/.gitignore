@@ -6,6 +6,7 @@ __pycache__/
 artifacts/*.json
 artifacts/*.xml
 artifacts/*.log
+!artifacts/m02-relational-model-results.json
 evidence/*-local.json
 db/data/
 docker-data/

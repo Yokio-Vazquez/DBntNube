@@ -1,0 +1,31 @@
+{
+  "assignmentId": "m02-relational-model",
+  "status": "implemented_with_local_runtime_validation_pending",
+  "migration": {
+    "revision": "b7c2d9e4f1a0",
+    "downRevision": "52a47070506a",
+    "idempotency": "IF NOT EXISTS, ON CONFLICT DO NOTHING and guarded foreign key creation"
+  },
+  "tables": [
+    "platforms",
+    "game_platforms",
+    "metric_definitions"
+  ],
+  "queries": 3,
+  "testCases": {
+    "normal": "documented",
+    "empty": "documented",
+    "boundary": "documented",
+    "declaredFailure": "documented"
+  },
+  "validation": {
+    "pythonCompile": "passed",
+    "evidenceJson": "passed",
+    "dockerComposeConfig": "passed",
+    "alembicAgainstPostgres": "not completed in this session"
+  },
+  "limitations": [
+    "make is unavailable in the current Windows session",
+    "the persisted PostgreSQL volume required credential synchronization before Alembic execution"
+  ]
+}

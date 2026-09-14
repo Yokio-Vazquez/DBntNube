@@ -1,0 +1,67 @@
+{
+  "assignmentId": "m02-relational-model",
+  "commitSha": "pending-final-commit-sha",
+  "tag": "week-02-final",
+  "commands": [
+    "make setup",
+    "make verify",
+    "make run",
+    "alembic upgrade head",
+    "alembic upgrade head"
+  ],
+  "results": {
+    "migration": "idempotent by IF NOT EXISTS, ON CONFLICT and guarded constraint creation",
+    "seed": "synthetic platforms, game-platform links and metric definitions",
+    "parametrizedQueries": "three SQL queries with named parameters",
+    "makeVerify": "not executed in this Windows session because make is unavailable; verifier contract checked directly",
+    "makeRun": "PostgreSQL container started; Alembic execution requires rerun after synchronizing the persisted volume credentials"
+  },
+  "schema": {
+    "tables": ["games", "game_metrics", "platforms", "game_platforms", "metric_definitions"],
+    "relationships": [
+      "games 1:N game_metrics",
+      "games N:M platforms through game_platforms",
+      "metric_definitions 1:N game_metrics by metric_name and unit"
+    ]
+  },
+  "invariants": [
+    "platform code, name and manufacturer are non-blank and code is unique",
+    "a game-platform pair is unique",
+    "publication status is planned, available or retired",
+    "metric name and unit must match a registered metric definition",
+    "M01 metric ranges and foreign keys remain enforced"
+  ],
+  "testCases": [
+    {
+      "name": "normal",
+      "query": "platform_code=ps5, minimum_rating=4.0",
+      "expected": "returns seeded PlayStation 5 games with rating at least 4.0"
+    },
+    {
+      "name": "empty",
+      "query": "platform_code=ps5, minimum_rating=5.01",
+      "expected": "returns zero rows"
+    },
+    {
+      "name": "boundary",
+      "query": "metric_name=rating, minimum_value=0, maximum_value=5",
+      "expected": "accepts inclusive metric bounds"
+    },
+    {
+      "name": "declared_failure",
+      "operation": "insert game_platforms with status=paused",
+      "expected": "rejected by game_platforms_status_valid"
+    }
+  ],
+  "assumptions": [
+    "Los identificadores de plataforma son codigos estables para integraciones.",
+    "Los datos del seed son sinteticos y solo sirven para pruebas reproducibles.",
+    "La API de M01 conserva metric_name y unit para compatibilidad.",
+    "El SHA y el resultado de Docker se completan en la entrega final del equipo."
+  ],
+  "limitations": [
+    "No se ejecuta PostgreSQL automaticamente durante make verify.",
+    "El fallo declarado requiere una instancia PostgreSQL para observar el SQLSTATE.",
+    "El modelo no registra regiones ni ediciones de una misma plataforma."
+  ]
+}
