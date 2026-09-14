@@ -9,4 +9,6 @@ verify:
 	@bash scripts/verify_base.sh
 
 run:
-	@docker compose up
+	@docker compose up -d
+	@echo "Esperando a la BD..." && sleep 3
+	@alembic upgrade head
