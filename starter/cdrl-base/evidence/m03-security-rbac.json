@@ -1,0 +1,28 @@
+{
+  "assignmentId": "m03-security-rbac",
+  "commitSha": "PENDIENTE_TAG_WEEK_03_FINAL",
+  "roles": {
+    "cdrl_migrator": "owner of public schema and business tables; DDL owner",
+    "cdrl_writer": "INSERT and UPDATE on games and game_metrics only",
+    "cdrl_reader": "SELECT on public business tables",
+    "cdrl_operator": "maintenance monitoring through pg_monitor; no business table access"
+  },
+  "securityControls": [
+    "REVOKE ALL ON SCHEMA public FROM PUBLIC",
+    "passwords are supplied through Docker environment variables",
+    "SQL contains no passwords or tokens",
+    "writer has no DELETE, TRUNCATE or table ownership",
+    "operator has no business table grants"
+  ],
+  "validationCases": [
+    "writer can insert and update a metric",
+    "writer DELETE is rejected",
+    "reader SELECT succeeds",
+    "reader INSERT is rejected",
+    "operator SELECT on business tables is rejected"
+  ],
+  "limitations": [
+    "Docker init scripts run only when the PostgreSQL data volume is initialized",
+    "The exact commit SHA is completed when week-03-final is tagged"
+  ]
+}

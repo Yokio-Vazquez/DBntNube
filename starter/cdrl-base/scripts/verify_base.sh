@@ -14,6 +14,10 @@ required_files=(
   "docs/ADR-002-modelo-relacional.md"
   "evidence/m02-relational-model.json"
   "artifacts/m02-relational-model-results.json"
+  "db/migrations/002_roles_and_privileges.sql"
+  "scripts/bootstrap_roles.sh"
+  "docs/ADR-003-seguridad-rbac.md"
+  "evidence/m03-security-rbac.json"
   ".github/workflows/cdrl-feedback.yml"
 )
 
@@ -52,6 +56,27 @@ if payload["assignmentId"] != "m02-relational-model":
     raise SystemExit("unexpected M02 assignmentId")
 if len(payload["testCases"]) < 4:
     raise SystemExit("M02 evidence must include normal, empty, boundary and failure cases")
+
+payload = json.loads(Path("evidence/m03-security-rbac.json").read_text())
+required = {"assignmentId", "commitSha", "roles", "securityControls", "validationCases", "limitations"}
+missing = sorted(required.difference(payload))
+if missing:
+  raise SystemExit(f"missing M03 evidence fields: {', '.join(missing)}")
+expected_roles = {"cdrl_migrator", "cdrl_writer", "cdrl_reader", "cdrl_operator"}
+if set(payload["roles"]) != expected_roles:
+  raise SystemExit("M03 evidence must define exactly the four required roles")
+PY
+
+python3 - <<'PY'
+import re
+from pathlib import Path
+
+sql = Path("db/migrations/002_roles_and_privileges.sql").read_text()
+for match in re.finditer(r"\bPASSWORD\s+([^\s;,\)]+)", sql, re.IGNORECASE):
+    value = match.group(1)
+    if value.startswith(":") or value.startswith("%"):
+        continue
+    raise SystemExit("hardcoded password detected in M03 SQL")
 PY
 
 mkdir -p artifacts
