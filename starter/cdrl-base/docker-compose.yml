@@ -1,14 +1,25 @@
 services:
   postgres:
     image: postgres:16-alpine
+    env_file:
+      - .env
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-cdrl}
+      POSTGRES_DB: ${DB_NAME:-cdrl}
       POSTGRES_USER: ${POSTGRES_USER:-cdrl_dev}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cdrl_dev_only}
-      CDRL_MIGRATOR_PASSWORD: ${CDRL_MIGRATOR_PASSWORD:-replace-me-locally}
-      CDRL_WRITER_PASSWORD: ${CDRL_WRITER_PASSWORD:-replace-me-locally}
-      CDRL_READER_PASSWORD: ${CDRL_READER_PASSWORD:-replace-me-locally}
-      CDRL_OPERATOR_PASSWORD: ${CDRL_OPERATOR_PASSWORD:-replace-me-locally}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-replace-me-bootstrap}
+      DB_NAME: ${DB_NAME:-cdrl}
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER_MIGRATOR: ${DB_USER_MIGRATOR:-cdrl_migrator}
+      DB_PASSWORD_MIGRATOR: ${DB_PASSWORD_MIGRATOR:-replace-me-migrator}
+      DB_USER_WRITER: ${DB_USER_WRITER:-cdrl_writer}
+      DB_PASSWORD_WRITER: ${DB_PASSWORD_WRITER:-replace-me-writer}
+      DB_USER_READER: ${DB_USER_READER:-cdrl_reader}
+      DB_PASSWORD_READER: ${DB_PASSWORD_READER:-replace-me-reader}
+      CDRL_MIGRATOR_PASSWORD: ${CDRL_MIGRATOR_PASSWORD:-replace-me-migrator}
+      CDRL_WRITER_PASSWORD: ${CDRL_WRITER_PASSWORD:-replace-me-writer}
+      CDRL_READER_PASSWORD: ${CDRL_READER_PASSWORD:-replace-me-reader}
+      CDRL_OPERATOR_PASSWORD: ${CDRL_OPERATOR_PASSWORD:-replace-me-operator}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
