@@ -1,6 +1,6 @@
 {
   "assignmentId": "m03-security-rbac",
-  "commitSha": "PENDIENTE_TAG_WEEK_03_FINAL",
+  "commitSha": "477387f6d9a09f0d6cd2b072c536846775544181",
   "roles": {
     "cdrl_migrator": "owner of public schema and business tables; DDL owner",
     "cdrl_writer": "INSERT and UPDATE on games and game_metrics only",
