@@ -1,12 +1,15 @@
 .PHONY: setup verify run security
 
+# Detecta automáticamente si el sistema usa 'python3' (Linux/Mac) o 'python' (Windows)
+PYTHON := $(shell python3 --version > /dev/null 2>&1 && echo python3 || echo python)
+
 setup:
 	@mkdir -p artifacts evidence docs db/migrations db/seed src tests
 	@test -f .env.example
 	@echo "CDRL starter base preparada. Configura .env localmente cuando corresponda."
 
 verify:
-	@bash scripts/verify_base.sh
+	@$(PYTHON) scripts/verify_base.py
 
 run:
 	@docker compose up -d
@@ -15,4 +18,4 @@ run:
 	@$(MAKE) security
 
 security:
-	@docker compose exec -T postgres sh -c 'psql --username "$$POSTGRES_USER" --dbname "$$POSTGRES_DB" --set=migrator_password="$$CDRL_MIGRATOR_PASSWORD" --set=writer_password="$$CDRL_WRITER_PASSWORD" --set=reader_password="$$CDRL_READER_PASSWORD" --set=operator_password="$$CDRL_OPERATOR_PASSWORD"' < db/migrations/002_roles_and_privileges.sql
+	@$(PYTHON) scripts/apply_security.py

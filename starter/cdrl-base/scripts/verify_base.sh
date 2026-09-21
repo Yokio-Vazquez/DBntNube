@@ -29,7 +29,7 @@ if command -v docker >/dev/null 2>&1; then
   docker compose config --quiet
 fi
 
-python3 - <<'PY'
+python - <<'PY'
 import json
 from pathlib import Path
 
@@ -40,7 +40,7 @@ if missing:
     raise SystemExit(f"missing evidence fields: {', '.join(missing)}")
 PY
 
-python3 - <<'PY'
+python - <<'PY'
 import json
 from pathlib import Path
 
@@ -67,7 +67,7 @@ if set(payload["roles"]) != expected_roles:
   raise SystemExit("M03 evidence must define exactly the four required roles")
 PY
 
-python3 - <<'PY'
+python - <<'PY'
 import re
 from pathlib import Path
 
@@ -80,7 +80,7 @@ for match in re.finditer(r"\bPASSWORD\s+([^\s;,\)]+)", sql, re.IGNORECASE):
 PY
 
 mkdir -p artifacts
-python3 - <<'PY'
+python - <<'PY'
 import json
 from pathlib import Path
 

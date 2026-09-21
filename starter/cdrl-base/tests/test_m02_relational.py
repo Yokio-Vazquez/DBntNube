@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import IntegrityError
 from src.main import app
-from src.database import SessionLocal
+from src.database import MigratorSessionLocal as SessionLocal
 from src.models import Platform, GamePlatform, MetricDefinition
 from datetime import date
 

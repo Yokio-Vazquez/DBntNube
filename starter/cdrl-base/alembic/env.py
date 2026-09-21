@@ -6,12 +6,12 @@ from alembic import context
 
 # Configuración de los modelos de la app
 from src.models import Base
-from src.database import MIGRATOR_DATABASE_URL
+from src.database import ADMIN_DATABASE_URL
 
 config = context.config
 
-# Establecer la URL dinámicamente desde el proyecto (ignorando el sqlalchemy.url de alembic.ini)
-config.set_main_option("sqlalchemy.url", MIGRATOR_DATABASE_URL.render_as_string(hide_password=False))
+# Establecer la URL dinámicamente desde el proyecto
+config.set_main_option("sqlalchemy.url", ADMIN_DATABASE_URL.render_as_string(hide_password=False))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

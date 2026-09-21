@@ -47,11 +47,11 @@ GRANT USAGE ON SCHEMA public TO cdrl_writer, cdrl_reader;
 DO $$
 BEGIN
     IF to_regclass('public.games') IS NOT NULL THEN
-        EXECUTE 'GRANT INSERT, UPDATE ON TABLE public.games TO cdrl_writer';
+        EXECUTE 'GRANT SELECT, INSERT, UPDATE ON TABLE public.games TO cdrl_writer';
         EXECUTE 'REVOKE DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLE public.games FROM cdrl_writer';
     END IF;
     IF to_regclass('public.game_metrics') IS NOT NULL THEN
-        EXECUTE 'GRANT INSERT, UPDATE ON TABLE public.game_metrics TO cdrl_writer';
+        EXECUTE 'GRANT SELECT, INSERT, UPDATE ON TABLE public.game_metrics TO cdrl_writer';
         EXECUTE 'REVOKE DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLE public.game_metrics FROM cdrl_writer';
     END IF;
     IF to_regclass('public.games_id_seq') IS NOT NULL THEN

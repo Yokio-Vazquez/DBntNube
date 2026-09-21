@@ -5,7 +5,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy import func, select
-from .database import get_db
+from .database import get_db_writer, get_db_reader
 from .models import Game, GameMetric
 
 app = FastAPI(title="CDRL API - Métricas de Videojuegos")
@@ -40,7 +40,7 @@ def get_metrics(
     game_id: int | None = Query(default=None),
     from_date: datetime | None = Query(default=None, alias="from"),
     to_date: datetime | None = Query(default=None, alias="to"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_reader),
 ):
     if from_date and to_date and from_date > to_date:
         raise HTTPException(status_code=422, detail="El parámetro from debe ser anterior o igual a to.")
@@ -60,7 +60,7 @@ def get_metrics(
 def get_metrics_by_value(
     metric_name: str = Query(..., min_length=1),
     min_value: float = Query(..., ge=0),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_reader),
 ):
     query = (
         select(GameMetric)
@@ -74,7 +74,7 @@ def get_metrics_by_value(
     return [metric_to_dict(metric) for metric in metrics]
 
 @app.get("/metrics/summary")
-def get_rating_summary(db: Session = Depends(get_db)):
+def get_rating_summary(db: Session = Depends(get_db_reader)):
     query = (
         select(
             Game.id.label("game_id"),
@@ -98,7 +98,7 @@ def get_rating_summary(db: Session = Depends(get_db)):
     ]
 
 @app.post("/metrics", status_code=201)
-def create_metric(metric: GameMetricBase, db: Session = Depends(get_db)):
+def create_metric(metric: GameMetricBase, db: Session = Depends(get_db_writer)):
     try:
         new_metric = GameMetric(
             external_id=metric.external_id,
