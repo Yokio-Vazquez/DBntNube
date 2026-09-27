@@ -14,6 +14,7 @@ verify:
 run:
 	@docker compose up -d
 	@echo "Esperando a la BD..." && sleep 3
+	@$(MAKE) security
 	@alembic upgrade head
 	@$(MAKE) security
 

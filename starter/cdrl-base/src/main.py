@@ -110,7 +110,6 @@ def create_metric(metric: GameMetricBase, db: Session = Depends(get_db_writer)):
         )
         db.add(new_metric)
         db.commit()
-        db.refresh(new_metric)
         
         return {
             "status": "success",

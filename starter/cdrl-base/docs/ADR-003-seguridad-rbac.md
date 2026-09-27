@@ -14,7 +14,7 @@ Se definen cuatro roles de aplicacion: `cdrl_migrator`, `cdrl_writer`, `cdrl_rea
 
 `REVOKE ALL ON SCHEMA public FROM PUBLIC` y revocaciones equivalentes sobre tablas y secuencias eliminan permisos heredados. Los privilegios por defecto del migrador conceden lectura a `cdrl_reader` para tablas futuras.
 
-Las contrasenas se inyectan como variables de entorno al contenedor y el target `make security` las pasa como variables de `psql` mientras envia el SQL por stdin. El SQL no contiene contrasenas ni valores secretos. El script es idempotente para roles existentes mediante `ALTER ROLE` y para permisos mediante `GRANT`/`REVOKE`.
+Las contrasenas se inyectan como variables de entorno al contenedor y el target `make security` las pasa como variables de `psql` mientras envia el SQL por stdin. El SQL no contiene contrasenas ni valores secretos. La migracion aditiva `003_enforce_role_privileges.sql` revoca todo privilegio de tabla al writer y concede solo `INSERT`/`UPDATE` en `games` y `game_metrics`; el uso de secuencias se limita a las necesarias para identidades. Alembic se conecta como `cdrl_migrator`, dueño del esquema y de las tablas.
 
 ## Rotación de Secretos
 
@@ -27,4 +27,4 @@ Para rotar las credenciales sin tiempo de inactividad, se debe seguir este proce
 
 ## Consecuencias
 
-`make run` levanta PostgreSQL, ejecuta Alembic y aplica RBAC después de crear las tablas. Esto evita depender de mounts de archivos en `docker-entrypoint-initdb.d` y permite corregir permisos también en volúmenes existentes. El target `make security` puede repetirse desde una conexión administrativa.
+`make run` levanta PostgreSQL, prepara los roles, ejecuta Alembic como `cdrl_migrator` y vuelve a aplicar privilegios para cubrir las tablas recién creadas. Esto evita depender de mounts de archivos en `docker-entrypoint-initdb.d` y permite corregir permisos también en volúmenes existentes. El target `make security` puede repetirse desde una conexión administrativa.

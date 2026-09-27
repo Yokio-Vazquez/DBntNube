@@ -20,9 +20,12 @@ REQUIRED_FILES = [
     "evidence/m02-relational-model.json",
     "artifacts/m02-relational-model-results.json",
     "db/migrations/002_roles_and_privileges.sql",
+    "db/migrations/003_enforce_role_privileges.sql",
     "scripts/bootstrap_roles.sh",
     "docs/ADR-003-seguridad-rbac.md",
     "evidence/m03-security-rbac.json",
+    "docs/ADR-004-decision-nosql.md",
+    "artifacts/m04-nosql-decision-results.json",
     ".github/workflows/cdrl-feedback.yml",
 ]
 
@@ -79,7 +82,35 @@ if set(payload["roles"]) != expected_roles:
     print("ERROR: M03 evidence must define exactly the four required roles", file=sys.stderr)
     sys.exit(1)
 
-# 6. Verificar que no haya contraseñas en el SQL
+# 6. Validar matriz de decisión NoSQL M04
+payload = json.loads(Path("artifacts/m04-nosql-decision-results.json").read_text(encoding="utf-8"))
+required = {"assignmentId", "decisionStatus", "criteria", "candidates", "selectedCandidate", "sources"}
+missing = sorted(required.difference(payload))
+if missing:
+    print(f"ERROR: missing M04 artifact fields: {', '.join(missing)}", file=sys.stderr)
+    sys.exit(1)
+if payload["assignmentId"] != "m04-nosql-decision":
+    print("ERROR: unexpected M04 assignmentId", file=sys.stderr)
+    sys.exit(1)
+criteria = payload["criteria"]
+weights = {criterion["id"]: criterion["weight"] for criterion in criteria}
+if sum(weights.values()) != 100:
+    print("ERROR: M04 criterion weights must sum to 100", file=sys.stderr)
+    sys.exit(1)
+for candidate in payload["candidates"]:
+    if set(candidate["scores"]) != set(weights):
+        print(f"ERROR: incomplete M04 scores for {candidate['id']}", file=sys.stderr)
+        sys.exit(1)
+    total = sum(weights[key] * candidate["scores"][key] for key in weights)
+    if total != candidate["weightedTotal"] or total / 5 != candidate["normalizedScore"]:
+        print(f"ERROR: inconsistent M04 weighted score for {candidate['id']}", file=sys.stderr)
+        sys.exit(1)
+selected = next((candidate for candidate in payload["candidates"] if candidate["id"] == payload["selectedCandidate"]), None)
+if selected is None or selected["normalizedScore"] != max(candidate["normalizedScore"] for candidate in payload["candidates"]):
+    print("ERROR: selected M04 candidate is missing or is not the highest scoring option", file=sys.stderr)
+    sys.exit(1)
+
+# 7. Verificar que no haya contraseñas en el SQL
 sql = Path("db/migrations/002_roles_and_privileges.sql").read_text(encoding="utf-8")
 for match in re.finditer(r"\bPASSWORD\s+([^\s;,\)]+)", sql, re.IGNORECASE):
     value = match.group(1)
@@ -88,7 +119,7 @@ for match in re.finditer(r"\bPASSWORD\s+([^\s;,\)]+)", sql, re.IGNORECASE):
     print("ERROR: hardcoded password detected in M03 SQL", file=sys.stderr)
     sys.exit(1)
 
-# 7. Generar artifacts/base-verify.json
+# 8. Generar artifacts/base-verify.json
 Path("artifacts").mkdir(exist_ok=True)
 Path("artifacts/base-verify.json").write_text(
     json.dumps({

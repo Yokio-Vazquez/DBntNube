@@ -4,7 +4,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-sql = Path("db/migrations/002_roles_and_privileges.sql").read_bytes()
+sql = b"\n".join(
+    Path(path).read_bytes()
+    for path in (
+        "db/migrations/002_roles_and_privileges.sql",
+        "db/migrations/003_enforce_role_privileges.sql",
+    )
+)
 
 result = subprocess.run(
     [

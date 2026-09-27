@@ -19,6 +19,15 @@ def test_reader_cannot_insert():
         # Verificamos que el error es por permisos insuficientes
         assert "permission denied" in str(exc_info.value).lower()
 
+def test_writer_cannot_select_business_tables():
+    url = build_url(os.environ.get("DB_USER_WRITER", "cdrl_writer"), os.environ.get("DB_PASSWORD_WRITER", "replace-me-writer"))
+    engine = create_engine(url)
+
+    with engine.connect() as conn:
+        with pytest.raises(ProgrammingError) as exc_info:
+            conn.execute(text("SELECT id FROM games LIMIT 1"))
+        assert "permission denied" in str(exc_info.value).lower()
+
 def test_writer_cannot_drop_table():
     # Conectamos como cdrl_writer
     url = build_url(os.environ.get("DB_USER_WRITER", "cdrl_writer"), os.environ.get("DB_PASSWORD_WRITER", "replace-me-writer"))

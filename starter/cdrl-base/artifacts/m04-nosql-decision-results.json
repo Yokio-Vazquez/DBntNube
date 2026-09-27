@@ -1,0 +1,107 @@
+{
+  "assignmentId": "m04-nosql-decision",
+  "decisionStatus": "provisional_pending_validation",
+  "scoreScale": {
+    "minimum": 1,
+    "maximum": 5,
+    "weightedTotalFormula": "sum(criterion weight * candidate score)",
+    "normalizedScoreFormula": "weightedTotal / 5; 0 to 100"
+  },
+  "criteria": [
+    {
+      "id": "consultas",
+      "name": "Consultas",
+      "weight": 30,
+      "hypothesis": "With 100,000 synthetic metrics keyed by game_id and metric_name#timestamp, at 1,000 requests/second, at least 95% of game/time-range reads use Query rather than Scan and achieve p95 below 20 ms in AWS.",
+      "validation": "Run representative game/time-range requests against an AWS table and record Query/Scan usage and p95 latency."
+    },
+    {
+      "id": "escala",
+      "name": "Escala",
+      "weight": 25,
+      "hypothesis": "In on-demand mode, increasing load from 100 to 1,000 requests/second for 15 minutes keeps throttling below 0.1% and p95 below 20 ms.",
+      "validation": "Run a synthetic ramp test and capture CloudWatch capacity, throttling, errors, and latency."
+    },
+    {
+      "id": "consistencia",
+      "name": "Consistencia",
+      "weight": 20,
+      "hypothesis": "For 1,000 PutItem then strongly consistent base-table reads, every acknowledged value is observed by the next GetItem or Query; GSI reads are measured separately as eventual.",
+      "validation": "Repeat write/read cycles with ConsistentRead enabled on the base table and compare behavior with a GSI."
+    },
+    {
+      "id": "costo",
+      "name": "Costo",
+      "weight": 15,
+      "hypothesis": "For 1 million 1 KB writes, 10 million 1 KB reads, and 10 GB stored per month in us-east-1, the AWS Pricing Calculator estimate is below USD 25/month, excluding free tier, streams, and auxiliary services.",
+      "validation": "Save the calculator inputs and exported estimate; revise the score if the estimate exceeds budget."
+    },
+    {
+      "id": "fallos",
+      "name": "Fallos y recuperacion",
+      "weight": 10,
+      "hypothesis": "During a 10-minute test injecting 1% throttling, timeout, and 5xx errors, bounded exponential retries with jitter complete at least 99.9% of operations without duplicate external IDs.",
+      "validation": "Inject transient faults through a test proxy or SDK stub and verify completion rate, retry bounds, and idempotency."
+    }
+  ],
+  "candidates": [
+    {
+      "id": "mongodb",
+      "name": "MongoDB",
+      "model": "document",
+      "scores": {"consultas": 4, "escala": 4, "consistencia": 4, "costo": 3, "fallos": 3},
+      "weightedTotal": 375,
+      "normalizedScore": 75,
+      "rationale": "Flexible documents fit variable payloads, but current access patterns are stable key/time queries and add an extra operational engine."
+    },
+    {
+      "id": "neo4j",
+      "name": "Neo4j",
+      "model": "graph",
+      "scores": {"consultas": 2, "escala": 3, "consistencia": 4, "costo": 2, "fallos": 3},
+      "weightedTotal": 275,
+      "normalizedScore": 55,
+      "rationale": "Native relationship traversal is valuable for path and network queries, which are not the current metrics workload."
+    },
+    {
+      "id": "cassandra",
+      "name": "Apache Cassandra",
+      "model": "wide_column",
+      "scores": {"consultas": 3, "escala": 5, "consistencia": 3, "costo": 2, "fallos": 4},
+      "weightedTotal": 345,
+      "normalizedScore": 69,
+      "rationale": "Excellent partitioned write scale, with query-by-partition design and cluster operations that are not justified for the current team scope."
+    },
+    {
+      "id": "dynamodb",
+      "name": "Amazon DynamoDB",
+      "model": "key_value_document",
+      "courseCategory": "column_key_value",
+      "scores": {"consultas": 5, "escala": 5, "consistencia": 4, "costo": 4, "fallos": 5},
+      "weightedTotal": 465,
+      "normalizedScore": 93,
+      "rationale": "Managed key-based Query aligns with game/time access patterns and on-demand capacity; base-table strong reads are available, while GSI reads are eventual."
+    },
+    {
+      "id": "s3",
+      "name": "Amazon S3",
+      "model": "object",
+      "scores": {"consultas": 2, "escala": 5, "consistencia": 4, "costo": 5, "fallos": 5},
+      "weightedTotal": 390,
+      "normalizedScore": 78,
+      "rationale": "Strong for durable, low-cost object archival, but not the primary store for low-latency per-game metric queries."
+    }
+  ],
+  "selectedCandidate": "dynamodb",
+  "selectionScope": "Complementary operational metrics/events store; PostgreSQL remains the relational source of truth.",
+  "validationStatus": "hypotheses_not_yet_measured",
+  "sources": [
+    "https://www.mongodb.com/docs/manual/data-modeling/",
+    "https://neo4j.com/docs/getting-started/graph-database/",
+    "https://cassandra.apache.org/doc/latest/cassandra/architecture/overview.html",
+    "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html",
+    "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html",
+    "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html",
+    "https://aws.amazon.com/dynamodb/pricing/"
+  ]
+}
