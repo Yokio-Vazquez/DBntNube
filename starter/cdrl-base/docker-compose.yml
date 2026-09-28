@@ -32,7 +32,7 @@ services:
 
   dynamodb:
     image: amazon/dynamodb-local:2.5.2
-    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data"
+    command: "-jar DynamoDBLocal.jar -inMemory -sharedDb"
     ports:
       - "${DYNAMODB_PORT:-8000}:8000"
     volumes:

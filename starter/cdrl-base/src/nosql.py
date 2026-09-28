@@ -3,6 +3,7 @@ import os
 import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
+from botocore.config import Config
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -44,7 +45,8 @@ def dynamodb_resource():
     if access_key and secret_key:
         options["aws_access_key_id"] = access_key
         options["aws_secret_access_key"] = secret_key
-    return boto3.resource("dynamodb", **options)
+    config = Config(connect_timeout=5, read_timeout=5, retries={'max_attempts': 0})
+    return boto3.resource("dynamodb", config=config, **options)
 
 
 def ensure_events_table():
