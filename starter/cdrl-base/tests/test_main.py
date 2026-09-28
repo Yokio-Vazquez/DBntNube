@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from src.main import app
+import src.main as main_module
 import uuid
 from datetime import datetime, timezone
 
@@ -9,6 +10,15 @@ client = TestClient(app)
 def test_health_check():
     response = client.get("/health")
     assert response.status_code == 200
+
+def test_get_events_queries_by_game(monkeypatch):
+    expected = [{"game_id": 1, "event_type": "session_started"}]
+    monkeypatch.setattr(main_module, "query_events", lambda game_id: expected)
+
+    response = client.get("/events", params={"game_id": 1})
+
+    assert response.status_code == 200
+    assert response.json() == expected
 
 def test_create_metric_success():
     payload = {

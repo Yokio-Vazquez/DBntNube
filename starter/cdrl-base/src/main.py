@@ -5,8 +5,10 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy import func, select
+from botocore.exceptions import BotoCoreError, ClientError
 from .database import get_db_writer, get_db_reader
 from .models import Game, GameMetric
+from .nosql import query_events
 
 app = FastAPI(title="CDRL API - Métricas de Videojuegos")
 
@@ -23,6 +25,16 @@ class GameMetricBase(BaseModel):
 @app.get("/health")
 def health_check():
     return {"status": "ok", "message": "API CDRL funcionando correctamente"}
+
+@app.get("/events")
+def get_events(game_id: int = Query(..., gt=0)):
+    try:
+        return query_events(game_id)
+    except (BotoCoreError, ClientError) as error:
+        raise HTTPException(
+            status_code=503,
+            detail="Service Unavailable: No se pudo consultar DynamoDB.",
+        ) from error
 
 def metric_to_dict(metric: GameMetric):
     return {

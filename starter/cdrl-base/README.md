@@ -11,6 +11,8 @@ Esta carpeta es la base común del proyecto **Cloud Data Reliability Lab (CDRL)*
 5. Ejecuta `make setup`, `make verify` y `make run`.
 6. Completa el hito semanal y conserva evidencia técnica individual de tu contribución.
 
+`make setup` y `make run` inician DynamoDB Local, crean idempotentemente la tabla `cdrl_events` y cargan eventos sintéticos. Configura `DYNAMODB_ENDPOINT_URL`, `DYNAMODB_TABLE` y `AWS_REGION` en `.env`; para DynamoDB Local las credenciales de ejemplo son valores ficticios. La API consulta los eventos con `GET /events?game_id=1`.
+
 El lenguaje de la aplicación lo selecciona el equipo y debe documentarse en un ADR. La interfaz mínima común del repositorio es:
 
 ```text
