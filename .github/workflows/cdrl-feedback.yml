@@ -20,5 +20,6 @@ jobs:
         working-directory: starter/cdrl-base
         run: |
           set -euo pipefail
+          python -m pip install -r requirements.txt
           make setup
           make verify
