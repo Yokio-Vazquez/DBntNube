@@ -1,6 +1,6 @@
 {
   "assignmentId": "m04-nosql-decision",
-  "commitSha": "PENDIENTE_TAG_WEEK_04_FINAL",
+  "commitSha": "3b9c924d9cb838dc8c3eb6d702e6d8f19cb6a414",
   "decision": "Amazon DynamoDB (Wide-Column / Key-Value)",
   "testCases": [
     "Normal: GET /events?game_id=1 retorna una lista de eventos desde DynamoDB.",
