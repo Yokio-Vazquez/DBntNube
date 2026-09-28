@@ -1,0 +1,19 @@
+{
+  "assignmentId": "m04-nosql-decision",
+  "commitSha": "PENDIENTE_TAG_WEEK_04_FINAL",
+  "decision": "Amazon DynamoDB (Wide-Column / Key-Value)",
+  "testCases": [
+    "Normal: GET /events?game_id=1 retorna una lista de eventos desde DynamoDB.",
+    "Edge 1: GET /events?game_id=999999 retorna una lista vacía para un juego sin eventos.",
+    "Edge 2: GET /events?game_id=0 retorna 422 Unprocessable Entity por validación de entrada.",
+    "Failure: Error de conexión con DynamoDB manejado correctamente retornando 503 Service Unavailable."
+  ],
+  "assumptions": [
+    "DynamoDB Local se usa para desarrollo y pruebas (docker-compose).",
+    "Los eventos son datos complementarios de sólo añadir (append-only), justificando el uso de NoSQL."
+  ],
+  "limitations": [
+    "Las búsquedas secundarias (por fecha) requerirían Índices Secundarios Globales (GSI) que aún no se han implementado.",
+    "La evidencia se genera en un entorno local, las pruebas de rendimiento (hipótesis del ADR) deberán realizarse en AWS."
+  ]
+}

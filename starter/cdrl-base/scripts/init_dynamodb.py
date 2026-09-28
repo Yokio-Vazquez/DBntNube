@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 """Create the local events table and load deterministic synthetic fixtures."""
 import time
+import sys
+import os
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from botocore.exceptions import BotoCoreError, ClientError
 
