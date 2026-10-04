@@ -1,0 +1,46 @@
+{
+  "assignmentId": "m05-document-store",
+  "commitSha": null,
+  "environment": "DynamoDB Local via Docker Compose; AWS Academy Learner Lab when available",
+  "table": {
+    "name": "cdrl_events",
+    "partitionKey": { "name": "game_id", "type": "N" },
+    "sortKey": { "name": "event_key", "type": "S" }
+  },
+  "globalSecondaryIndexes": [
+    {
+      "name": "event-type-occurred-at-index",
+      "partitionKey": { "name": "event_type", "type": "S" },
+      "sortKey": { "name": "occurred_at", "type": "S" },
+      "projection": "ALL",
+      "status": "ACTIVE; verified in DynamoDB Local"
+    }
+  ],
+  "accessPatterns": [
+    "Query events by game_id using the table primary key",
+    "Query events by event_type and occurred_at range using event-type-occurred-at-index"
+  ],
+  "commands": ["make setup", "make verify", "make run"],
+  "results": {
+    "makeSetup": "GNU Make unavailable; equivalent Docker Compose and init script succeeded",
+    "makeVerify": "GNU Make unavailable; python scripts/verify_base.py passed directly",
+    "makeRun": "GNU Make unavailable; equivalent run started services and applied RBAC, but Alembic failed on cdrl_migrator authentication",
+    "syntheticFixtures": "configured",
+    "gsiActivation": "verified ACTIVE in DynamoDB Local",
+    "existingM04Tests": "4 passed"
+  },
+  "testCases": [
+    { "id": "normal", "status": "pending" },
+    { "id": "duplicate", "status": "pending" },
+    { "id": "absent", "status": "pending" },
+    { "id": "invalid-document", "status": "pending" }
+  ],
+  "assumptions": [
+    "occurred_at values use canonical UTC ISO 8601 strings",
+    "development fixtures contain synthetic data only"
+  ],
+  "limitations": [
+    "Global secondary index reads are eventually consistent",
+    "AWS performance and availability hypotheses are not validated by DynamoDB Local"
+  ]
+}
