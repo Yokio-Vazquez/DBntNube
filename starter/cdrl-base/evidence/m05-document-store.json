@@ -1,6 +1,6 @@
 {
   "assignmentId": "m05-document-store",
-  "commitSha": null,
+  "commitSha": "498c635e7306c078539e980138a248328e8e2d90",
   "environment": "DynamoDB Local via Docker Compose; AWS Academy Learner Lab when available",
   "table": {
     "name": "cdrl_events",
@@ -30,10 +30,10 @@
     "existingM04Tests": "4 passed"
   },
   "testCases": [
-    { "id": "normal", "status": "pending" },
-    { "id": "duplicate", "status": "pending" },
-    { "id": "absent", "status": "pending" },
-    { "id": "invalid-document", "status": "pending" }
+    { "id": "normal", "status": "passed" },
+    { "id": "duplicate", "status": "passed" },
+    { "id": "absent", "status": "passed" },
+    { "id": "invalid-document", "status": "passed" }
   ],
   "assumptions": [
     "occurred_at values use canonical UTC ISO 8601 strings",
