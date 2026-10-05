@@ -2,10 +2,11 @@ import os
 import time
 
 import boto3
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
 from botocore.config import Config
 from dotenv import load_dotenv
+from .schemas import EventDocument
 
 load_dotenv()
 
@@ -54,7 +55,6 @@ FIXTURE_EVENTS = [
         "source": "synthetic-fixture",
     },
 ]
-
 
 def dynamodb_resource():
     options = {
@@ -125,3 +125,82 @@ def query_events(game_id: int):
     table = dynamodb_resource().Table(TABLE_NAME)
     response = table.query(KeyConditionExpression=Key("game_id").eq(game_id))
     return response.get("Items", [])
+
+def create_event(event: EventDocument) -> bool:
+    table = dynamodb_resource().Table(TABLE_NAME)
+
+    try:
+        table.put_item(
+            Item=event.model_dump(),
+            ConditionExpression=(
+                Attr("game_id").not_exists()
+                & Attr("event_key").not_exists()
+            ),
+        )
+        return True
+    except ClientError as error:
+        if error.response["Error"]["Code"] == "ConditionalCheckFailedException":
+            return False
+        raise
+
+
+def get_event(game_id: int, event_key: str) -> dict | None:
+    table = dynamodb_resource().Table(TABLE_NAME)
+    response = table.get_item(
+        Key={"game_id": game_id, "event_key": event_key}
+    )
+    return response.get("Item")
+
+
+def query_events_by_type(
+    event_type: str,
+    from_time: str,
+    to_time: str,
+) -> list[dict]:
+    table = dynamodb_resource().Table(TABLE_NAME)
+    response = table.query(
+        IndexName=EVENT_TYPE_INDEX,
+        KeyConditionExpression=(
+            Key("event_type").eq(event_type)
+            & Key("occurred_at").between(from_time, to_time)
+        ),
+    )
+    return response.get("Items", [])
+
+
+def update_event(
+    game_id: int,
+    event_key: str,
+    event: EventDocument,
+) -> dict:
+    if event.game_id != game_id or event.event_key != event_key:
+        raise ValueError("Las claves del evento no pueden cambiar.")
+
+    fields = event.model_dump(exclude={"game_id", "event_key"})
+    names = {f"#{name}": name for name in fields}
+    values = {f":{name}": value for name, value in fields.items()}
+    update_expression = "SET " + ", ".join(
+        f"#{name} = :{name}" for name in fields
+    )
+
+    table = dynamodb_resource().Table(TABLE_NAME)
+    response = table.update_item(
+        Key={"game_id": game_id, "event_key": event_key},
+        UpdateExpression=update_expression,
+        ExpressionAttributeNames=names,
+        ExpressionAttributeValues=values,
+        ConditionExpression=(
+            Attr("game_id").exists() & Attr("event_key").exists()
+        ),
+        ReturnValues="ALL_NEW",
+    )
+    return response["Attributes"]
+
+
+def delete_event(game_id: int, event_key: str) -> bool:
+    table = dynamodb_resource().Table(TABLE_NAME)
+    response = table.delete_item(
+        Key={"game_id": game_id, "event_key": event_key},
+        ReturnValues="ALL_OLD",
+    )
+    return "Attributes" in response
