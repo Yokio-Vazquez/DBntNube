@@ -1,10 +1,23 @@
 from fastapi.testclient import TestClient
 
 from src.main import app
+from src.schemas import EventDocument
 import src.main as main_module
 
 
 client = TestClient(app)
+
+
+def test_new_event_documents_default_to_v2():
+    event = EventDocument(
+        game_id=1,
+        event_key="session_started#2026-10-11T10:00:00Z#v2-001",
+        event_type="session_started",
+        occurred_at="2026-10-11T10:00:00Z",
+        source="synthetic-fixture",
+    )
+
+    assert event.model_dump(by_alias=True)["schemaVersion"] == 2
 
 
 def test_events_returns_v2_document(monkeypatch):
