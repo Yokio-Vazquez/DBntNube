@@ -4,7 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, OperationalError
-from sqlalchemy import func, select
+from sqlalchemy import func, insert, select
 from botocore.exceptions import BotoCoreError, ClientError
 from .database import get_db_writer, get_db_reader
 from .event_schemas import (
@@ -123,15 +123,16 @@ def get_rating_summary(db: Session = Depends(get_db_reader)):
 @app.post("/metrics", status_code=201)
 def create_metric(metric: GameMetricBase, db: Session = Depends(get_db_writer)):
     try:
-        new_metric = GameMetric(
-            external_id=metric.external_id,
-            game_id=metric.game_id,
-            metric_name=metric.metric_name,
-            metric_value=metric.metric_value,
-            unit=metric.unit,
-            measured_at=metric.measured_at
+        db.execute(
+            insert(GameMetric.__table__).inline().values(
+                external_id=metric.external_id,
+                game_id=metric.game_id,
+                metric_name=metric.metric_name,
+                metric_value=metric.metric_value,
+                unit=metric.unit,
+                measured_at=metric.measured_at,
+            )
         )
-        db.add(new_metric)
         db.commit()
         
         return {

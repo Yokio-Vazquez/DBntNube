@@ -1,5 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.dialects import postgresql
+from src.database import get_db_writer
 from src.main import app
 import src.main as main_module
 import uuid
@@ -25,6 +27,37 @@ def test_get_events_queries_by_game(monkeypatch):
 
     assert response.status_code == 200
     assert response.json() == [{**expected[0], "schemaVersion": 1}]
+
+def test_create_metric_does_not_return_generated_id(monkeypatch):
+    statements = []
+
+    class SessionStub:
+        def execute(self, statement):
+            statements.append(statement)
+
+        def commit(self):
+            pass
+
+        def rollback(self):
+            pass
+
+    def override_get_db_writer():
+        yield SessionStub()
+
+    monkeypatch.setitem(app.dependency_overrides, get_db_writer, override_get_db_writer)
+    response = client.post("/metrics", json={
+        "external_id": "writer-insert-no-returning",
+        "game_id": 1,
+        "metric_name": "rating",
+        "metric_value": 4.5,
+        "unit": "stars",
+        "measured_at": "2026-10-11T10:00:00Z",
+    })
+
+    assert response.status_code == 201
+    assert len(statements) == 1
+    sql = str(statements[0].compile(dialect=postgresql.dialect()))
+    assert "RETURNING" not in sql.upper()
 
 def test_create_metric_success():
     payload = {
