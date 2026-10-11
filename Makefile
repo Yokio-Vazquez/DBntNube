@@ -7,12 +7,16 @@ setup:
 	@$(PYTHON) -c "import os; [os.makedirs(d, exist_ok=True) for d in ['artifacts', 'evidence', 'docs', 'db/migrations', 'db/seed', 'src', 'tests']]"
 	@$(PYTHON) -c "import os, sys; sys.exit(0 if os.path.isfile('.env.example') else 1)"
 	@$(PYTHON) -c "import shutil, os; os.path.exists('.env') or shutil.copy('.env.example', '.env')"
-	@docker compose up -d dynamodb
+	@docker compose up -d --wait
 	@$(PYTHON) scripts/init_dynamodb.py
-	@echo "CDRL starter base preparada. Configura .env localmente cuando corresponda."
+	@$(MAKE) security
+	@alembic upgrade head
+	@$(MAKE) security
+	@echo "Entorno CDRL preparado."
 
 verify:
 	@$(PYTHON) scripts/verify_base.py
+	@$(PYTHON) -m pytest tests/ --junitxml=artifacts/test_report.xml
 
 run:
 	@docker compose up -d

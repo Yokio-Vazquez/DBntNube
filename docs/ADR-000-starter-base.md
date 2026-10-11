@@ -21,4 +21,4 @@ La base incluye una interfaz Makefile común, configuración sintética, Docker 
 ## Límites conocidos
 
 - La imagen de DynamoDB local debe ser registrada por versión o digest por el equipo cuando se use como respaldo.
-- Esta base no implementa todavía el esquema, la API ni las pruebas de los hitos; esas capacidades se agregan de forma incremental.
+- El proyecto ahora incluye el esquema relacional, la API y una suite de pruebas que se ejecuta con `make verify` y genera `artifacts/test_report.xml`.

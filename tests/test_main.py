@@ -12,13 +12,19 @@ def test_health_check():
     assert response.status_code == 200
 
 def test_get_events_queries_by_game(monkeypatch):
-    expected = [{"game_id": 1, "event_type": "session_started"}]
+    expected = [{
+        "game_id": 1,
+        "event_key": "session_started#2026-09-27T10:00:00Z#fixture-001",
+        "event_type": "session_started",
+        "occurred_at": "2026-09-27T10:00:00Z",
+        "source": "synthetic-fixture",
+    }]
     monkeypatch.setattr(main_module, "query_events", lambda game_id: expected)
 
     response = client.get("/events", params={"game_id": 1})
 
     assert response.status_code == 200
-    assert response.json() == expected
+    assert response.json() == [{**expected[0], "schemaVersion": 1}]
 
 def test_create_metric_success():
     payload = {

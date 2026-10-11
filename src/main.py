@@ -7,6 +7,12 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy import func, select
 from botocore.exceptions import BotoCoreError, ClientError
 from .database import get_db_writer, get_db_reader
+from .event_schemas import (
+    EventV1,
+    EventV2,
+    UnsupportedEventVersion,
+    normalize_event,
+)
 from .models import Game, GameMetric
 from .nosql import query_events
 
@@ -26,10 +32,15 @@ class GameMetricBase(BaseModel):
 def health_check():
     return {"status": "ok", "message": "API CDRL funcionando correctamente"}
 
-@app.get("/events")
+@app.get("/events", response_model=list[EventV1 | EventV2])
 def get_events(game_id: int = Query(..., gt=0)):
     try:
-        return query_events(game_id)
+        return [normalize_event(event) for event in query_events(game_id)]
+    except UnsupportedEventVersion as error:
+        raise HTTPException(
+            status_code=500,
+            detail="DynamoDB contiene un documento con una version no soportada.",
+        ) from error
     except (BotoCoreError, ClientError) as error:
         raise HTTPException(
             status_code=503,
