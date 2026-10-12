@@ -16,7 +16,10 @@
     {
       "persona": 2,
       "role": "Auditoria de Cambios (Seguridad y Logs)",
-      "commitShas": ["715625f8e868dae39e06021ca1466ebb643b6249"],
+      "commitShas": [
+        "715625f8e868dae39e06021ca1466ebb643b6249",
+        "f4ab10df5537a2b0d6343905f34141bb205a38b3"
+      ],
       "artifacts": [
         "src/audit.py",
         "db/migrations/004_audit_and_soft_delete.sql",
@@ -29,7 +32,10 @@
     {
       "persona": 3,
       "role": "Falla, Recuperacion y CI/CD (DevOps)",
-      "commitShas": ["715625f8e868dae39e06021ca1466ebb643b6249"],
+      "commitShas": [
+        "c99728313f21c26c276f14553b8d72236ca916f6",
+        "2f7ec17326df5aa70591b61922dd4bb10b0e513d"
+      ],
       "artifacts": [
         "scripts/disaster_recovery.py",
         "tests/fixtures/recovery_fixture.json",
@@ -43,11 +49,14 @@
   ],
   "auditTests": {
     "deleteRecordsAudit": "passed — DELETE genera registro en audit_logs con actor, accion, recurso y resultado",
-    "secretsRedaction": "passed — password, access_token y clientSecret son [REDACTED] antes de persistir"
+    "deleteMissingFailure": "passed — DELETE en metrica inexistente (404) registra auditoria con outcome=failure y reason=not_found",
+    "secretsRedaction": "passed — password, access_token y clientSecret son [REDACTED] antes de persistir",
+    "minimalOptionalFields": "passed — registro de auditoria tolera actor_id, resource_id y details opcionales/nulos sin fallar"
   },
   "recoveryTests": {
     "normalRecovery": "passed — 5 registros del fixture restaurados, verificacion OK",
     "fixtureValidity": "passed — fixture existe y todos los items tienen campos obligatorios",
+    "verifyRestoreBoundaries": "passed — umbrales frontera de verificacion (exacto, superior, deficitario, cero) y desastre sobre tabla vacia",
     "dymamodbUnreachable": "passed — BotoCoreError propaga como fallo real, sin skip"
   },
   "versionTests": {

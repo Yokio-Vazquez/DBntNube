@@ -3,7 +3,9 @@ test_m06_recovery.py — Pruebas de Persona 3: simulacion de fallo y recuperacio
 
 Casos:
 - Normal: Recuperacion completa desde fixture retorna el numero correcto de registros.
-- Failure: Simular que DynamoDB esta caido durante la recuperacion produce un fallo real.
+- Limite 1: El fixture existe, no esta vacio y contiene el esquema y campos obligatorios.
+- Limite 2: Umbrales frontera de verificacion de restauracion y desastre sobre tabla vacia.
+- Fallo declarado: Simular que DynamoDB esta caido durante la recuperacion produce un fallo real (BotoCoreError).
 """
 import json
 import time
@@ -67,11 +69,12 @@ def test_m06_recovery_restores_correct_number_of_records():
 
 
 # ---------------------------------------------------------------------------
-# Caso Limite: El fixture debe existir y tener items validos
+# ---------------------------------------------------------------------------
+# Caso Limite 1: El fixture debe existir y tener items validos
 # ---------------------------------------------------------------------------
 def test_m06_fixture_file_exists_and_is_valid():
     """
-    Limite: El archivo de fixture debe existir en la ruta esperada
+    Limite 1: El archivo de fixture debe existir en la ruta esperada
     y contener al menos un item con los campos obligatorios.
     """
     assert FIXTURE_PATH.is_file(), f"El fixture no existe en {FIXTURE_PATH}"
@@ -83,6 +86,46 @@ def test_m06_fixture_file_exists_and_is_valid():
     for item in items:
         missing = required_fields - set(item.keys())
         assert not missing, f"Item del fixture tiene campos faltantes: {missing} — item: {item}"
+
+
+# ---------------------------------------------------------------------------
+# Caso Limite 2: Comportamiento de limites y frontera en verificacion y desastre
+# ---------------------------------------------------------------------------
+def test_m06_verify_restore_boundary_conditions():
+    """
+    Limite 2: Valida los umbrales frontera de la verificacion de restauracion
+    y el comportamiento de simulacion de desastre cuando la tabla ya esta vacia:
+    - Conteo exacto: actual == expected -> True (restauracion completa)
+    - Conteo superior: actual > expected -> True (cumple con el minimo)
+    - Conteo deficitario: actual < expected -> False (restauracion incompleta detectada)
+    - Limite inferior: expected == 0 con tabla vacia -> True
+    - Desastre sobre tabla vacia: retorna 0 items eliminados sin fallar
+    """
+    from scripts.disaster_recovery import simulate_disaster, verify_restore
+
+    mock_table = MagicMock()
+
+    # Frontera 1: conteo exacto de registros restaurados
+    mock_table.scan.return_value = {"Count": 5}
+    assert verify_restore(mock_table, expected_count=5) is True
+
+    # Frontera 2: conteo superior al esperado
+    mock_table.scan.return_value = {"Count": 10}
+    assert verify_restore(mock_table, expected_count=5) is True
+
+    # Frontera 3: conteo deficitario (falta 1 registro para cumplir)
+    mock_table.scan.return_value = {"Count": 4}
+    assert verify_restore(mock_table, expected_count=5) is False
+
+    # Frontera 4: cero registros esperados en tabla vacia
+    mock_table.scan.return_value = {"Count": 0}
+    assert verify_restore(mock_table, expected_count=0) is True
+
+    # Frontera 5: simular desastre sobre tabla previamente vacia
+    mock_empty_table = MagicMock()
+    mock_empty_table.scan.return_value = {"Items": []}
+    deleted = simulate_disaster(mock_empty_table)
+    assert deleted == 0
 
 
 # ---------------------------------------------------------------------------
@@ -106,3 +149,4 @@ def test_m06_recovery_fails_when_dynamodb_unreachable():
 
         with pytest.raises(BotoCoreError):
             restore_from_fixture(mock_table, FIXTURE_PATH)
+
