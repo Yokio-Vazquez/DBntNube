@@ -2,11 +2,11 @@
 
 ## Estado
 
-Propuesta seleccionada: Amazon DynamoDB como almacenamiento complementario, pendiente de validar las hipotesis de carga y costo.
+Aceptado e implementado: Amazon DynamoDB integrado como almacenamiento complementario de eventos. La API expone `GET /events` conectado a DynamoDB con soporte de versiones de documentos (v1/v2). Las hipotesis de carga y costo en AWS estan pendientes de validacion.
 
 ## Contexto y alcance
 
-El CDRL ya usa PostgreSQL para el catalogo de juegos, las relaciones con plataformas y la integridad de las metricas. La decision M04 no reemplaza ese contrato relacional. Evalua un almacen complementario para metricas/eventos operativos consultados principalmente por juego y tiempo, con escala variable. La decision se basa en los patrones visibles en M02; el repositorio aun no implementa una integracion de la API con DynamoDB.
+El CDRL ya usa PostgreSQL para el catalogo de juegos, las relaciones con plataformas y la integridad de las metricas. La decision M04 no reemplaza ese contrato relacional. Evalua un almacen complementario para metricas/eventos operativos consultados principalmente por juego y tiempo, con escala variable. La decision se basa en los patrones visibles en M02. La integracion de la API con DynamoDB esta implementada: el endpoint `GET /events?game_id={id}` consulta la tabla `cdrl_events` y soporta documentos de esquema v1 y v2 simultaneamente.
 
 ## Tipos NoSQL evaluados
 
@@ -64,17 +64,19 @@ Las cinco hipotesis estan pendientes; DynamoDB Local sirve para desarrollo funci
 - Una mala distribucion de claves puede crear particiones calientes; medir distribucion y throttling antes de aceptar.
 - El precio depende de tamano de item, region, lecturas/escrituras, indices, backups y modo de capacidad. La puntuacion de costo no sustituye la calculadora.
 - NoSQL Local en Docker no representa disponibilidad multi-AZ ni rendimiento AWS; usarlo solo para pruebas funcionales y reservar pruebas de servicio para Learner Lab si esta habilitado.
-- Esta ADR es una decision de arquitectura; no declara que la integracion NoSQL ya este implementada.
+- La integracion de la API con DynamoDB esta implementada y se valida con `make verify` mediante las pruebas de M04 y M05.
 
 ## Cambios incluidos en esta entrega
 
 - Se documentaron y puntuaron cinco alternativas que cubren los tipos documental, grafo, wide-column, clave-valor/documento y objetos.
-- Se selecciono provisionalmente DynamoDB como complemento de PostgreSQL y se registraron cinco hipotesis falsables con sus metodos de validacion.
+- Se selecciono DynamoDB como complemento de PostgreSQL y se registraron cinco hipotesis falsables con sus metodos de validacion.
 - Se creo `artifacts/m04-nosql-decision-results.json` con los pesos, puntuaciones, totales ponderados y opcion seleccionada.
 - Se extendio `scripts/verify_base.py` para validar que los pesos sumen 100, que la aritmetica de la matriz sea consistente y que la opcion seleccionada tenga la puntuacion mayor.
-- Se permitio versionar el artefacto M04 mediante una excepcion especifica en `.gitignore`.
+- Se implemento el endpoint `GET /events?game_id={id}` en `src/main.py` que consulta DynamoDB con manejo de errores 503 para servicio no disponible.
+- Se implemento soporte de multiples versiones de documentos (v1 y v2) en `src/event_schemas.py`.
+- Las pruebas de M04 y M05 se ejecutan con `make verify` usando mocks para no depender de DynamoDB en ejecucion.
 
-La comprobacion automatizada confirmo el JSON, los pesos y los totales; las hipotesis de rendimiento, consistencia, costo y recuperacion permanecen pendientes de ejecucion.
+La comprobacion automatizada confirmo el JSON, los pesos y los totales; las hipotesis de rendimiento, consistencia, costo y recuperacion en AWS permanecen pendientes de validacion en Learner Lab.
 
 ## Fuentes
 

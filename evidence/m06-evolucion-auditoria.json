@@ -1,0 +1,59 @@
+{
+  "assignmentId": "m06-evolucion-auditoria",
+  "commitSha": "715625f8e868dae39e06021ca1466ebb643b6249",
+  "milestone": "M06 — Consulta, evolucion, auditoria y recuperacion",
+  "team": [
+    {
+      "persona": 1,
+      "role": "Evolucion de Documentos (Modelado y API)",
+      "commitShas": ["d585af46bcdc539dfe928d79c19b05edfc164be8"],
+      "artifacts": [
+        "src/event_schemas.py",
+        "tests/test_m06_document_versions.py"
+      ],
+      "description": "Implementa soporte de versiones v1 y v2 en GET /events. Los documentos sin schemaVersion se normalizan como v1; los nuevos usan schemaVersion=2. Versiones desconocidas producen HTTP 500."
+    },
+    {
+      "persona": 2,
+      "role": "Auditoria de Cambios (Seguridad y Logs)",
+      "commitShas": ["715625f8e868dae39e06021ca1466ebb643b6249"],
+      "artifacts": [
+        "src/audit.py",
+        "db/migrations/004_audit_and_soft_delete.sql",
+        "alembic/versions/c84f39d2a611_audit_and_soft_delete.py",
+        "docs/ADR-006-auditoria-recuperacion.md",
+        "tests/test_m07_audit.py"
+      ],
+      "description": "Tabla audit_logs append-only con trigger que rechaza UPDATE y DELETE. record_audit() filtra campos sensibles (password, token, secret, etc.) reemplazandolos por [REDACTED]. Borrado logico via soft_delete_metric(bigint)."
+    },
+    {
+      "persona": 3,
+      "role": "Falla, Recuperacion y CI/CD (DevOps)",
+      "commitShas": ["715625f8e868dae39e06021ca1466ebb643b6249"],
+      "artifacts": [
+        "scripts/disaster_recovery.py",
+        "tests/fixtures/recovery_fixture.json",
+        "tests/test_m06_recovery.py",
+        "artifacts/m06-resultados.json",
+        "scripts/verify_base.py",
+        "Makefile"
+      ],
+      "description": "Script disaster_recovery.py simula borrado de tabla DynamoDB y restaura desde fixture sintetico. Mide registros y tiempo. verify_base.py valida los artefactos M05 y M06. make verify ejecuta todas las pruebas con pytest --junitxml."
+    }
+  ],
+  "auditTests": {
+    "deleteRecordsAudit": "passed — DELETE genera registro en audit_logs con actor, accion, recurso y resultado",
+    "secretsRedaction": "passed — password, access_token y clientSecret son [REDACTED] antes de persistir"
+  },
+  "recoveryTests": {
+    "normalRecovery": "passed — 5 registros del fixture restaurados, verificacion OK",
+    "fixtureValidity": "passed — fixture existe y todos los items tienen campos obligatorios",
+    "dymamodbUnreachable": "passed — BotoCoreError propaga como fallo real, sin skip"
+  },
+  "versionTests": {
+    "v2Default": "passed — nuevos documentos tienen schemaVersion=2",
+    "v1Legacy": "passed — documentos sin schemaVersion se normalizan a v1",
+    "v2Explicit": "passed — documentos con schemaVersion=2 se devuelven tal cual",
+    "unsupportedVersion": "passed — schemaVersion=3 produce HTTP 500"
+  }
+}

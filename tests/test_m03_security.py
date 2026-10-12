@@ -54,10 +54,41 @@ def test_invalid_credentials_rejected():
     # Conectamos con credenciales falsas
     url = build_url(os.environ["DB_USER_READER"], os.environ["DB_PASSWORD_INVALID_TEST"])
     engine = create_engine(url)
-    
+
     with pytest.raises(OperationalError) as exc_info:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
-    
+
     # Debe ser error de autenticación fallida
     assert "password authentication failed" in str(exc_info.value).lower()
+
+
+def test_operator_cannot_access_business_tables():
+    """
+    M03 — Vista operacional: el operador NO puede consultar las tablas de negocio
+    directamente. Su acceso está limitado a la vista v_operational_summary.
+    """
+    url = build_url(os.environ["DB_USER_OPERATOR"], os.environ["DB_PASSWORD_OPERATOR"])
+    engine = create_engine(url)
+
+    with engine.connect() as conn:
+        with pytest.raises(ProgrammingError) as exc_info:
+            conn.execute(text("SELECT id FROM games LIMIT 1"))
+        assert "permission denied" in str(exc_info.value).lower()
+
+
+def test_operator_can_query_operational_view():
+    """
+    M03 — Vista operacional: el operador puede consultar la vista
+    v_operational_summary (SELECT concedido explicitamente), sin poder
+    acceder a las tablas base que la componen.
+    La vista es creada por la migracion Alembic d9f3a1b2e405.
+    """
+    url = build_url(os.environ["DB_USER_OPERATOR"], os.environ["DB_PASSWORD_OPERATOR"])
+    engine = create_engine(url)
+
+    with engine.connect() as conn:
+        result = conn.execute(text("SELECT game_id, game_title, total_metrics FROM public.v_operational_summary LIMIT 1"))
+        rows = result.fetchall()
+        # La vista debe existir y ser accesible; el seed tiene datos
+        assert isinstance(rows, list)

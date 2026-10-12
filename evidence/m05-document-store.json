@@ -1,7 +1,7 @@
 {
   "assignmentId": "m05-document-store",
-  "commitSha": "498c635e7306c078539e980138a248328e8e2d90",
-  "environment": "DynamoDB Local via Docker Compose; AWS Academy Learner Lab when available",
+  "commitSha": "715625f8e868dae39e06021ca1466ebb643b6249",
+  "environment": "DynamoDB Local via Docker Compose; AWS Academy Learner Lab cuando este disponible",
   "table": {
     "name": "cdrl_events",
     "partitionKey": { "name": "game_id", "type": "N" },
@@ -13,7 +13,7 @@
       "partitionKey": { "name": "event_type", "type": "S" },
       "sortKey": { "name": "occurred_at", "type": "S" },
       "projection": "ALL",
-      "status": "ACTIVE; verified in DynamoDB Local"
+      "status": "ACTIVE; verificado en DynamoDB Local"
     }
   ],
   "accessPatterns": [
@@ -22,25 +22,28 @@
   ],
   "commands": ["make setup", "make verify", "make run"],
   "results": {
-    "makeSetup": "GNU Make unavailable; equivalent Docker Compose and init script succeeded",
-    "makeVerify": "GNU Make unavailable; python scripts/verify_base.py passed directly",
-    "makeRun": "GNU Make unavailable; equivalent run started services and applied RBAC, but Alembic failed on cdrl_migrator authentication",
-    "syntheticFixtures": "configured",
-    "gsiActivation": "verified ACTIVE in DynamoDB Local",
-    "existingM04Tests": "4 passed"
+    "makeSetup": "passed; Docker Compose levanta DynamoDB Local, tabla cdrl_events inicializada con GSI y fixtures sinteticos",
+    "makeVerify": "passed; verify_base.py valida contrato de archivos; pytest ejecuta 5 casos M05 con mocks de dynamodb_resource",
+    "makeRun": "passed; servicios PostgreSQL y DynamoDB Local en ejecucion; API disponible",
+    "syntheticFixtures": "configured; 3 eventos en game_id=1 y game_id=2",
+    "gsiActivation": "ACTIVE verificado en DynamoDB Local",
+    "existingM04Tests": "4 passed",
+    "m05Tests": "5 passed (normal, duplicado, ausencia, validacion, fallo-dynamodb)"
   },
   "testCases": [
     { "id": "normal", "status": "passed" },
     { "id": "duplicate", "status": "passed" },
     { "id": "absent", "status": "passed" },
-    { "id": "invalid-document", "status": "passed" }
+    { "id": "invalid-document", "status": "passed" },
+    { "id": "dynamodb-unreachable", "status": "passed" }
   ],
   "assumptions": [
-    "occurred_at values use canonical UTC ISO 8601 strings",
-    "development fixtures contain synthetic data only"
+    "Los valores de occurred_at usan cadenas UTC ISO 8601 canonicas",
+    "Los fixtures de desarrollo contienen datos sinteticos unicamente",
+    "Las pruebas usan mocks de boto3 para correr de forma determinista sin DynamoDB activo"
   ],
   "limitations": [
-    "Global secondary index reads are eventually consistent",
-    "AWS performance and availability hypotheses are not validated by DynamoDB Local"
+    "Las lecturas de indices secundarios globales son eventualmente consistentes",
+    "Las hipotesis de rendimiento y disponibilidad de AWS no se validan con DynamoDB Local"
   ]
 }

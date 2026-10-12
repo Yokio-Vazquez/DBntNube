@@ -27,6 +27,15 @@ REQUIRED_FILES = [
     "docs/ADR-004-decision-nosql.md",
     "artifacts/m04-nosql-decision-results.json",
     ".github/workflows/cdrl-feedback.yml",
+    # M05
+    "docs/ADR-005-almacen-documental.md",
+    "evidence/m05-document-store.json",
+    # M06
+    "docs/ADR-006-auditoria-recuperacion.md",
+    "tests/fixtures/recovery_fixture.json",
+    "scripts/disaster_recovery.py",
+    "evidence/m06-evolucion-auditoria.json",
+    "artifacts/m06-resultados.json",
 ]
 
 # 1. Verificar archivos requeridos
@@ -131,3 +140,56 @@ Path("artifacts/base-verify.json").write_text(
 )
 
 print("CDRL starter base verification passed")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 8b. Validar evidencia M05
+# ─────────────────────────────────────────────────────────────────────────────
+payload = json.loads(Path("evidence/m05-document-store.json").read_text(encoding="utf-8"))
+required = {"assignmentId", "commitSha", "commands", "results", "testCases", "assumptions", "limitations"}
+missing = sorted(required.difference(payload))
+if missing:
+    print(f"ERROR: missing M05 evidence fields: {', '.join(missing)}", file=sys.stderr)
+    sys.exit(1)
+if payload["assignmentId"] != "m05-document-store":
+    print("ERROR: unexpected M05 assignmentId", file=sys.stderr)
+    sys.exit(1)
+if len(payload["testCases"]) < 4:
+    print("ERROR: M05 evidence must include at least 4 test cases", file=sys.stderr)
+    sys.exit(1)
+# Verificar que no haya menciones a 'unavailable' en results (Windows workaround)
+for key, val in payload.get("results", {}).items():
+    if "unavailable" in str(val).lower() and "make" in str(val).lower():
+        print(f"ERROR: M05 results['{key}'] contiene referencias a 'GNU Make unavailable' — actualizar con resultados reales", file=sys.stderr)
+        sys.exit(1)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 9. Validar evidencia y artefactos M06
+# ─────────────────────────────────────────────────────────────────────────────
+payload_m06 = json.loads(Path("evidence/m06-evolucion-auditoria.json").read_text(encoding="utf-8"))
+required_m06 = {"assignmentId", "commitSha", "team", "auditTests", "recoveryTests", "versionTests"}
+missing_m06 = sorted(required_m06.difference(payload_m06))
+if missing_m06:
+    print(f"ERROR: missing M06 evidence fields: {', '.join(missing_m06)}", file=sys.stderr)
+    sys.exit(1)
+if len(payload_m06.get("team", [])) < 3:
+    print("ERROR: M06 evidence must document contributions from at least 3 personas", file=sys.stderr)
+    sys.exit(1)
+
+# Validar m06-resultados.json
+payload_m06_res = json.loads(Path("artifacts/m06-resultados.json").read_text(encoding="utf-8"))
+required_m06_res = {"assignmentId", "table", "fixture", "disaster", "recovery", "verification"}
+missing_m06_res = sorted(required_m06_res.difference(payload_m06_res))
+if missing_m06_res:
+    print(f"ERROR: missing m06-resultados.json fields: {', '.join(missing_m06_res)}", file=sys.stderr)
+    sys.exit(1)
+if payload_m06_res.get("verification", {}).get("status") != "success":
+    print("ERROR: m06-resultados.json verification.status debe ser 'success'", file=sys.stderr)
+    sys.exit(1)
+
+# Validar fixture de recuperacion
+fixture = json.loads(Path("tests/fixtures/recovery_fixture.json").read_text(encoding="utf-8"))
+if len(fixture.get("items", [])) < 1:
+    print("ERROR: recovery_fixture.json debe tener al menos 1 item", file=sys.stderr)
+    sys.exit(1)
+
+print("M05 + M06 validation passed")

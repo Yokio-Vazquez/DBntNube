@@ -18,12 +18,18 @@ Las contrasenas se inyectan como variables de entorno al contenedor y el target 
 
 ## Rotación de Secretos
 
-Para rotar las credenciales sin tiempo de inactividad, se debe seguir este procedimiento en producción:
-1. Generar la nueva contraseña de forma segura.
-2. Acceder temporalmente a la base de datos con un rol administrativo (o `cdrl_migrator`).
-3. Ejecutar el comando de actualización, por ejemplo: `ALTER ROLE cdrl_writer WITH PASSWORD 'nueva_contrasena';`.
-4. Actualizar inmediatamente las variables de entorno en la infraestructura de la API (por ejemplo, en AWS Secrets Manager o los parámetros del orquestador de contenedores).
-5. Reiniciar o redesplegar los contenedores de la API de forma escalonada (Rolling Update) para que tomen la nueva variable de entorno y comiencen a conectarse con la nueva contraseña, sin interrumpir el servicio.
+Solo el usuario administrador de bootstrap (`POSTGRES_USER`, `cdrl_dev`) tiene el atributo `CREATEROLE` en PostgreSQL y puede ejecutar `ALTER ROLE ... WITH PASSWORD ...`. `cdrl_migrator` es propietario del esquema y las tablas para DDL de negocio, pero **no tiene `CREATEROLE`** y no puede rotar las credenciales de otros roles.
+
+Procedimiento de rotacion segura en produccion:
+1. Generar la nueva contrasena de forma segura (gestor de secretos).
+2. Conectarse a PostgreSQL con el usuario administrador (`POSTGRES_USER` / `cdrl_dev`).
+3. Ejecutar: `ALTER ROLE cdrl_writer WITH PASSWORD 'nueva_contrasena';` (u otro rol).
+4. Actualizar la variable de entorno en el orquestador de contenedores (ej. AWS Secrets Manager).
+5. Redesplegar los contenedores de la API de forma escalonada para que tomen la nueva variable.
+
+## Vista Operacional Segura
+
+La vista `public.v_operational_summary` (owner: `cdrl_migrator`) expone totales de metricas y la ultima fecha de medicion por juego. El rol `cdrl_operator` tiene `SELECT` unicamente sobre esa vista; sus permisos de tabla siguen revocados. La migracion Alembic `d9f3a1b2e405` crea la vista y concede el permiso.
 
 ## Consecuencias
 

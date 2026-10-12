@@ -1,19 +1,30 @@
 {
   "assignmentId": "m04-nosql-decision",
-  "commitSha": "37f50f5ce4d0fc051e28cea05e5aa2083f5d5450",
-  "decision": "Amazon DynamoDB (Wide-Column / Key-Value)",
+  "commitSha": "715625f8e868dae39e06021ca1466ebb643b6249",
+  "decision": "Amazon DynamoDB (Clave-valor / Documento)",
+  "commands": [
+    "make setup",
+    "make verify",
+    "make run"
+  ],
+  "results": {
+    "makeSetup": "Docker Compose levanta DynamoDB Local; tabla cdrl_events inicializada con fixtures sinteticos",
+    "makeVerify": "verify_base.py valida contrato de archivos y matriz M04; pytest ejecuta 4 casos de prueba M04 usando monkeypatch",
+    "makeRun": "Servicios levantados; API disponible en http://localhost:8000"
+  },
   "testCases": [
-    "Normal: GET /events?game_id=1 retorna una lista de eventos desde DynamoDB.",
-    "Edge 1: GET /events?game_id=999999 retorna una lista vacía para un juego sin eventos.",
-    "Edge 2: GET /events?game_id=0 retorna 422 Unprocessable Entity por validación de entrada.",
-    "Failure: Error de conexión con DynamoDB manejado correctamente retornando 503 Service Unavailable."
+    "Normal: GET /events?game_id=1 retorna una lista de eventos con schemaVersion normalizado (monkeypatch).",
+    "Edge 1: GET /events?game_id=999999 retorna lista vacia para un juego sin eventos (monkeypatch).",
+    "Edge 2: GET /events?game_id=0 retorna 422 Unprocessable Entity por validacion de entrada.",
+    "Failure: DynamoDB inaccesible lanza BotoCoreError; la API retorna 503 Service Unavailable (monkeypatch)."
   ],
   "assumptions": [
     "DynamoDB Local se usa para desarrollo y pruebas (docker-compose).",
-    "Los eventos son datos complementarios de sólo añadir (append-only), justificando el uso de NoSQL."
+    "Los eventos son datos complementarios de solo anadir (append-only), justificando el uso de NoSQL.",
+    "Las pruebas de integracion usan monkeypatch para correr sin DynamoDB activo en CI."
   ],
   "limitations": [
-    "Las búsquedas secundarias (por fecha) requerirían Índices Secundarios Globales (GSI) que aún no se han implementado.",
-    "La evidencia se genera en un entorno local, las pruebas de rendimiento (hipótesis del ADR) deberán realizarse en AWS."
+    "Las busquedas secundarias (por fecha) requieren Indices Secundarios Globales (GSI) ya implementados pero eventualmente consistentes.",
+    "La evidencia de rendimiento (hipotesis del ADR) debera validarse en AWS Learner Lab."
   ]
 }

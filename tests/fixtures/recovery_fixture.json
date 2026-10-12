@@ -1,0 +1,47 @@
+{
+  "description": "Fixture sintetico de recuperacion M06 — eventos cdrl_events para simulacion de desastre y restauracion",
+  "table": "cdrl_events",
+  "generated_at": "2026-10-12T00:00:00Z",
+  "items": [
+    {
+      "game_id": 1,
+      "event_key": "session_started#2026-09-27T10:00:00Z#fixture-001",
+      "event_type": "session_started",
+      "occurred_at": "2026-09-27T10:00:00Z",
+      "source": "recovery-fixture",
+      "schemaVersion": 1
+    },
+    {
+      "game_id": 1,
+      "event_key": "achievement_unlocked#2026-09-27T10:05:00Z#fixture-002",
+      "event_type": "achievement_unlocked",
+      "occurred_at": "2026-09-27T10:05:00Z",
+      "source": "recovery-fixture",
+      "schemaVersion": 1
+    },
+    {
+      "game_id": 2,
+      "event_key": "session_started#2026-09-27T10:10:00Z#fixture-003",
+      "event_type": "session_started",
+      "occurred_at": "2026-09-27T10:10:00Z",
+      "source": "recovery-fixture",
+      "schemaVersion": 1
+    },
+    {
+      "game_id": 1,
+      "event_key": "session_ended#2026-10-01T12:00:00Z#fixture-004",
+      "event_type": "session_ended",
+      "occurred_at": "2026-10-01T12:00:00Z",
+      "source": "recovery-fixture",
+      "schemaVersion": 2
+    },
+    {
+      "game_id": 3,
+      "event_key": "achievement_unlocked#2026-10-05T09:00:00Z#fixture-005",
+      "event_type": "achievement_unlocked",
+      "occurred_at": "2026-10-05T09:00:00Z",
+      "source": "recovery-fixture",
+      "schemaVersion": 2
+    }
+  ]
+}

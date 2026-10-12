@@ -1,10 +1,10 @@
 {
   "assignmentId": "m02-relational-model",
-  "status": "implemented_with_local_runtime_validation_pending",
+  "status": "implemented_and_validated",
   "migration": {
     "revision": "b7c2d9e4f1a0",
     "downRevision": "52a47070506a",
-    "idempotency": "IF NOT EXISTS, ON CONFLICT DO NOTHING and guarded foreign key creation"
+    "idempotency": "IF NOT EXISTS, ON CONFLICT DO NOTHING y creacion de clave foranea con guarda"
   },
   "tables": [
     "platforms",
@@ -13,19 +13,21 @@
   ],
   "queries": 3,
   "testCases": {
-    "normal": "documented",
-    "empty": "documented",
-    "boundary": "documented",
-    "declaredFailure": "documented"
+    "normal": "passed — consulta por rating minimo retorna al menos un resultado del seed",
+    "empty": "passed — game_id inexistente retorna lista vacia",
+    "boundary": "passed — los tres estados validos (planned, available, retired) son aceptados por la restriccion",
+    "declaredFailure": "passed — status='paused' es rechazado por game_platforms_status_valid con IntegrityError"
   },
   "validation": {
     "pythonCompile": "passed",
     "evidenceJson": "passed",
     "dockerComposeConfig": "passed",
-    "alembicAgainstPostgres": "not completed in this session"
+    "alembicUpgradeHead": "passed via make setup",
+    "pytestM02": "4 tests passed"
   },
+  "commands": ["make setup", "make verify", "make run"],
   "limitations": [
-    "make is unavailable in the current Windows session",
-    "the persisted PostgreSQL volume required credential synchronization before Alembic execution"
+    "Las pruebas de M02 requieren que PostgreSQL este corriendo via Docker Compose (make setup)",
+    "Los seeds usan ON CONFLICT DO NOTHING para ser idempotentes"
   ]
 }

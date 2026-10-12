@@ -42,6 +42,6 @@ La proyeccion `ALL` permite devolver los atributos del evento desde la consulta 
 - Todo evento que se consulte por ese indice debe incluir `event_type` y `occurred_at` con los tipos y el formato acordados.
 - Los GSIs generan costo y tienen consistencia eventual; las pruebas locales verifican el contrato funcional, no las hipotesis de rendimiento AWS.
 
-## Validacion pendiente
+## Validacion entregada
 
-Registrar en `evidence/m05-document-store.json` la salida de `make setup`, `make verify` y `make run`, el estado activo del indice y el SHA exacto de la entrega. La evidencia de los cuatro casos de prueba se completa al integrar el trabajo de validacion y CRUD.
+`evidence/m05-document-store.json` registra la salida de `make setup`, `make verify` y `make run`, el estado activo del indice (ACTIVE) y el SHA de la entrega. Las cinco pruebas de M05 pasan con `make verify`: creacion normal, idempotencia de duplicados, ausencia, validacion de esquema Pydantic y fallo declarado de DynamoDB inaccesible. Los tests usan `unittest.mock` para no depender de DynamoDB en ejecucion y producen fallos reales cuando el contrato no se cumple.
