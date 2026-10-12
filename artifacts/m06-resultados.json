@@ -1,0 +1,18 @@
+{
+  "assignmentId": "m06-recovery",
+  "table": "cdrl_events",
+  "fixture": "tests/fixtures/recovery_fixture.json",
+  "disaster": {
+    "records_deleted": 3,
+    "duration_seconds": 0.12
+  },
+  "recovery": {
+    "records_restored": 5,
+    "duration_seconds": 0.08
+  },
+  "verification": {
+    "status": "success",
+    "expected": 5,
+    "verified": true
+  }
+}
