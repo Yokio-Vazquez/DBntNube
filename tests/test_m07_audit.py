@@ -124,3 +124,28 @@ def test_audit_redacts_secrets_from_sensitive_request_data():
     assert password_value not in serialized_details
     assert token_value not in serialized_details
     assert secret_value not in serialized_details
+
+
+def test_audit_records_minimal_optional_fields():
+    class SessionStub:
+        def execute(self, statement):
+            self.statement = statement
+
+    session = SessionStub()
+    entry = record_audit(
+        session,
+        actor_id=None,
+        action="system.check",
+        resource_type="system",
+        resource_id=None,
+        outcome="success",
+        details=None,
+    )
+
+    persisted_values = session.statement.compile().params
+    assert entry.actor_id is None
+    assert entry.resource_id is None
+    assert entry.details == {}
+    assert persisted_values["actor_id"] is None
+    assert persisted_values["resource_id"] is None
+    assert persisted_values["details"] == {}
