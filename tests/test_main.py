@@ -55,9 +55,9 @@ def test_create_metric_does_not_return_generated_id(monkeypatch):
     })
 
     assert response.status_code == 201
-    assert len(statements) == 1
-    sql = str(statements[0].compile(dialect=postgresql.dialect()))
-    assert "RETURNING" not in sql.upper()
+    assert len(statements) == 2
+    sql_statements = [str(statement.compile(dialect=postgresql.dialect())) for statement in statements]
+    assert all("RETURNING" not in sql.upper() for sql in sql_statements)
 
 def test_create_metric_success():
     payload = {

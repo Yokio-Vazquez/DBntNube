@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, BigInteger, CheckConstraint, Numeric, Date
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, BigInteger, CheckConstraint, Numeric, Date, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 from .database import Base
 
@@ -24,6 +25,7 @@ class GameMetric(Base):
     unit = Column(String(20), nullable=False)
     measured_at = Column(DateTime(timezone=True), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
         CheckConstraint('metric_value >= 0', name='check_metric_value_positive'),
@@ -59,4 +61,17 @@ class MetricDefinition(Base):
     metric_name = Column(String(30), unique=True, nullable=False)
     unit = Column(String(20), nullable=False)
     description = Column(String(200), nullable=False)
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    actor_id = Column(String(120), nullable=True)
+    action = Column(String(80), nullable=False)
+    resource_type = Column(String(80), nullable=False)
+    resource_id = Column(String(120), nullable=True)
+    outcome = Column(String(20), nullable=False)
+    details = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    occurred_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi import FastAPI, HTTPException, Depends, Query, Header, Response
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from decimal import Decimal
@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy import func, insert, select
 from botocore.exceptions import BotoCoreError, ClientError
 from .database import get_db_writer, get_db_reader
+from .audit import record_audit
 from .event_schemas import (
     EventV1,
     EventV2,
@@ -68,7 +69,7 @@ def get_metrics(
     if from_date and to_date and from_date > to_date:
         raise HTTPException(status_code=422, detail="El parámetro from debe ser anterior o igual a to.")
 
-    query = select(GameMetric)
+    query = select(GameMetric).where(GameMetric.deleted_at.is_(None))
     if game_id is not None:
         query = query.where(GameMetric.game_id == game_id)
     if from_date is not None:
@@ -88,6 +89,7 @@ def get_metrics_by_value(
     query = (
         select(GameMetric)
         .where(
+            GameMetric.deleted_at.is_(None),
             GameMetric.metric_name == metric_name,
             GameMetric.metric_value >= min_value,
         )
@@ -106,7 +108,7 @@ def get_rating_summary(db: Session = Depends(get_db_reader)):
             func.count(GameMetric.id).label("metric_count"),
         )
         .join(GameMetric, GameMetric.game_id == Game.id)
-        .where(GameMetric.metric_name == "rating")
+        .where(GameMetric.metric_name == "rating", GameMetric.deleted_at.is_(None))
         .group_by(Game.id, Game.title)
         .order_by(Game.id)
     )
@@ -121,7 +123,11 @@ def get_rating_summary(db: Session = Depends(get_db_reader)):
     ]
 
 @app.post("/metrics", status_code=201)
-def create_metric(metric: GameMetricBase, db: Session = Depends(get_db_writer)):
+def create_metric(
+    metric: GameMetricBase,
+    actor_id: str | None = Header(default=None, alias="X-Actor-ID"),
+    db: Session = Depends(get_db_writer),
+):
     try:
         db.execute(
             insert(GameMetric.__table__).inline().values(
@@ -132,6 +138,15 @@ def create_metric(metric: GameMetricBase, db: Session = Depends(get_db_writer)):
                 unit=metric.unit,
                 measured_at=metric.measured_at,
             )
+        )
+        record_audit(
+            db,
+            actor_id=actor_id,
+            action="metric.create",
+            resource_type="game_metric",
+            resource_id=metric.external_id,
+            outcome="success",
+            details={"external_id": metric.external_id, "game_id": metric.game_id},
         )
         db.commit()
         
@@ -164,3 +179,44 @@ def create_metric(metric: GameMetricBase, db: Session = Depends(get_db_writer)):
             status_code=503, 
             detail="Service Unavailable: No se pudo conectar a la base de datos."
         )
+
+
+@app.delete("/metrics/{metric_id}", status_code=204)
+def delete_metric(
+    metric_id: int,
+    response: Response,
+    actor_id: str | None = Header(default=None, alias="X-Actor-ID"),
+    db: Session = Depends(get_db_writer),
+):
+    try:
+        deleted = db.execute(select(func.soft_delete_metric(metric_id))).scalar_one_or_none()
+        if not deleted:
+            record_audit(
+                db,
+                actor_id=actor_id,
+                action="metric.soft_delete",
+                resource_type="game_metric",
+                resource_id=str(metric_id),
+                outcome="failure",
+                details={"reason": "not_found"},
+            )
+            db.commit()
+            raise HTTPException(status_code=404, detail="Métrica no encontrada.")
+
+        record_audit(
+            db,
+            actor_id=actor_id,
+            action="metric.soft_delete",
+            resource_type="game_metric",
+            resource_id=str(metric_id),
+            outcome="success",
+            details={"soft_delete": True},
+        )
+        db.commit()
+    except OperationalError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=503,
+            detail="Service Unavailable: No se pudo conectar a la base de datos.",
+        ) from error
+    response.status_code = 204

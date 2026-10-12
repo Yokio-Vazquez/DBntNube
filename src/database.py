@@ -44,11 +44,11 @@ MIGRATOR_DATABASE_URL = build_database_url(
 # Conexión administrativa para Alembic (antes de crear los roles)
 ADMIN_DATABASE_URL = URL.create(
     drivername="postgresql+psycopg",
-    username=os.environ.get("POSTGRES_USER", "cdrl_dev"),
-    password=os.environ.get("POSTGRES_PASSWORD", "replace-me-bootstrap"),
-    host=os.environ.get("DB_HOST", "localhost"),
-    port=int(os.environ.get("DB_PORT", "5432")),
-    database=os.environ.get("POSTGRES_DB", "cdrl"),
+    username=os.environ["POSTGRES_USER"],
+    password=os.environ["POSTGRES_PASSWORD"],
+    host=os.environ["DB_HOST"],
+    port=int(os.environ["DB_PORT"]),
+    database=os.environ["POSTGRES_DB"],
 )
 
 writer_engine = create_engine(WRITER_DATABASE_URL)

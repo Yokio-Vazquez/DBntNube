@@ -1,15 +1,25 @@
 import os
 import pytest
-from sqlalchemy import create_engine, text
+from dotenv import load_dotenv
+from sqlalchemy import URL, create_engine, text
 from sqlalchemy.exc import ProgrammingError, OperationalError
+
+load_dotenv()
 
 # Reusamos la lógica de conexión de la API pero probando credenciales específicas
 def build_url(user, password):
-    return f"postgresql+psycopg://{user}:{password}@localhost:5432/cdrl"
+    return URL.create(
+        drivername="postgresql+psycopg",
+        username=user,
+        password=password,
+        host=os.environ["DB_HOST"],
+        port=int(os.environ["DB_PORT"]),
+        database=os.environ["DB_NAME"],
+    )
 
 def test_reader_cannot_insert():
     # Conectamos como cdrl_reader
-    url = build_url(os.environ.get("DB_USER_READER", "cdrl_reader"), os.environ.get("DB_PASSWORD_READER", "replace-me-reader"))
+    url = build_url(os.environ["DB_USER_READER"], os.environ["DB_PASSWORD_READER"])
     engine = create_engine(url)
     
     with engine.connect() as conn:
@@ -20,7 +30,7 @@ def test_reader_cannot_insert():
         assert "permission denied" in str(exc_info.value).lower()
 
 def test_writer_cannot_select_business_tables():
-    url = build_url(os.environ.get("DB_USER_WRITER", "cdrl_writer"), os.environ.get("DB_PASSWORD_WRITER", "replace-me-writer"))
+    url = build_url(os.environ["DB_USER_WRITER"], os.environ["DB_PASSWORD_WRITER"])
     engine = create_engine(url)
 
     with engine.connect() as conn:
@@ -30,7 +40,7 @@ def test_writer_cannot_select_business_tables():
 
 def test_writer_cannot_drop_table():
     # Conectamos como cdrl_writer
-    url = build_url(os.environ.get("DB_USER_WRITER", "cdrl_writer"), os.environ.get("DB_PASSWORD_WRITER", "replace-me-writer"))
+    url = build_url(os.environ["DB_USER_WRITER"], os.environ["DB_PASSWORD_WRITER"])
     engine = create_engine(url)
     
     with engine.connect() as conn:
@@ -42,7 +52,7 @@ def test_writer_cannot_drop_table():
 
 def test_invalid_credentials_rejected():
     # Conectamos con credenciales falsas
-    url = build_url("cdrl_reader", "contrasena_equivocada_falsa")
+    url = build_url(os.environ["DB_USER_READER"], os.environ["DB_PASSWORD_INVALID_TEST"])
     engine = create_engine(url)
     
     with pytest.raises(OperationalError) as exc_info:
