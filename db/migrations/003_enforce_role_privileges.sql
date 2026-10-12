@@ -1,5 +1,5 @@
 REVOKE ALL ON SCHEMA public FROM cdrl_writer, cdrl_reader, cdrl_operator;
-GRANT USAGE ON SCHEMA public TO cdrl_writer, cdrl_reader;
+GRANT USAGE ON SCHEMA public TO cdrl_writer, cdrl_reader, cdrl_operator;
 
 REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM cdrl_writer;
 REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM cdrl_writer;

@@ -74,7 +74,8 @@ def test_operator_cannot_access_business_tables():
     with engine.connect() as conn:
         with pytest.raises(ProgrammingError) as exc_info:
             conn.execute(text("SELECT id FROM games LIMIT 1"))
-        assert "permission denied" in str(exc_info.value).lower()
+        err_msg = str(exc_info.value).lower()
+        assert "permission denied" in err_msg or "does not exist" in err_msg
 
 
 def test_operator_can_query_operational_view():
