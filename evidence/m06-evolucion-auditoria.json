@@ -1,6 +1,6 @@
 {
   "assignmentId": "m06-evolucion-auditoria",
-  "commitSha": "715625f8e868dae39e06021ca1466ebb643b6249",
+  "commitSha": "2a27c3883d92b8e9a86fde0ae9733981e3f6234f",
   "milestone": "M06 — Consulta, evolucion, auditoria y recuperacion",
   "team": [
     {
@@ -44,7 +44,7 @@
         "scripts/verify_base.py",
         "Makefile"
       ],
-      "description": "Script disaster_recovery.py simula borrado de tabla DynamoDB y restaura desde fixture sintetico. Mide registros y tiempo. verify_base.py valida los artefactos M05 y M06. make verify ejecuta todas las pruebas con pytest --junitxml."
+      "description": "Script disaster_recovery.py simula borrado de tabla DynamoDB y restaura desde fixture sintetico. Mide registros y tiempo. verify_base.py valida los artefactos M05 y M06. make verify ejecuta disaster_recovery.py (regenera artifacts/m06-resultados.json) y todas las pruebas con pytest --junitxml."
     }
   ],
   "auditTests": {

@@ -16,6 +16,7 @@ setup:
 
 verify:
 	@$(PYTHON) scripts/verify_base.py
+	@$(PYTHON) scripts/disaster_recovery.py
 	@$(PYTHON) -m pytest tests/ --junitxml=artifacts/test_report.xml
 
 run:

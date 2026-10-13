@@ -1,6 +1,6 @@
 {
   "assignmentId": "m05-document-store",
-  "commitSha": "715625f8e868dae39e06021ca1466ebb643b6249",
+  "commitSha": "2a27c3883d92b8e9a86fde0ae9733981e3f6234f",
   "environment": "DynamoDB Local via Docker Compose; AWS Academy Learner Lab cuando este disponible",
   "table": {
     "name": "cdrl_events",
