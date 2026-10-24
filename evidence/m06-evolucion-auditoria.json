@@ -25,7 +25,7 @@
         "db/migrations/004_audit_and_soft_delete.sql",
         "alembic/versions/c84f39d2a611_audit_and_soft_delete.py",
         "docs/ADR-006-auditoria-recuperacion.md",
-        "tests/test_m07_audit.py"
+        "tests/test_m06_audit.py"
       ],
       "description": "Tabla audit_logs append-only con trigger que rechaza UPDATE y DELETE. record_audit() filtra campos sensibles (password, token, secret, etc.) reemplazandolos por [REDACTED]. Borrado logico via soft_delete_metric(bigint)."
     },
