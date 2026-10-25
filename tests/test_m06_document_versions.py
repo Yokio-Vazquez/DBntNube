@@ -56,11 +56,11 @@ def test_events_defaults_legacy_document_to_v1(monkeypatch):
 def test_events_rejects_unsupported_document_version(monkeypatch):
     event = {
         "game_id": 1,
-        "event_key": "session_started#2026-10-11T10:00:00Z#v3-001",
+        "event_key": "session_started#2026-10-11T10:00:00Z#unsupported-001",
         "event_type": "session_started",
         "occurred_at": "2026-10-11T10:00:00Z",
         "source": "synthetic-fixture",
-        "schemaVersion": 3,
+        "schemaVersion": 99,
     }
     monkeypatch.setattr(main_module, "query_events", lambda game_id: [event])
 

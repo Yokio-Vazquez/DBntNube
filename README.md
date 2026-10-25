@@ -29,3 +29,7 @@ make run
 ## Entrega de cada hito
 
 En Classroom entrega el repositorio propio del equipo, el tag semanal solicitado, el SHA exacto y el reporte de `make verify`. El repositorio debe conservar el historial y la evidencia de participación técnica de cada integrante.
+
+## Preparación e implementación M07
+
+La [guía corregida](docs/M07-guia-equipo.md) define el trabajo del equipo. La [implementación de Persona 1](docs/M07-persona1-implementacion.md) documenta el API compatible, la configuración de escritura, las funciones compartidas y la validación realizada.

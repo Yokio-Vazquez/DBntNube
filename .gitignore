@@ -9,6 +9,7 @@ artifacts/*.log
 !artifacts/m02-relational-model-results.json
 !artifacts/m04-nosql-decision-results.json
 !artifacts/m06-resultados.json
+!artifacts/m07-migration-results.json
 evidence/*-local.json
 db/data/
 docker-data/

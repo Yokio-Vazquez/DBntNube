@@ -11,6 +11,8 @@ from .audit import record_audit
 from .event_schemas import (
     EventV1,
     EventV2,
+    EventV3,
+    project,
     UnsupportedEventVersion,
     normalize_event,
 )
@@ -33,10 +35,20 @@ class GameMetricBase(BaseModel):
 def health_check():
     return {"status": "ok", "message": "API CDRL funcionando correctamente"}
 
-@app.get("/events", response_model=list[EventV1 | EventV2])
-def get_events(game_id: int = Query(..., gt=0)):
+@app.get(
+    "/events",
+    response_model=list[EventV1 | EventV2 | EventV3],
+    response_model_exclude_none=True,
+)
+def get_events(
+    game_id: int = Query(..., gt=0),
+    version: int | None = Query(default=None, ge=1, le=3),
+):
     try:
-        return [normalize_event(event) for event in query_events(game_id)]
+        return [
+            normalize_event(project(event, version) if version is not None else event)
+            for event in query_events(game_id)
+        ]
     except UnsupportedEventVersion as error:
         raise HTTPException(
             status_code=500,
