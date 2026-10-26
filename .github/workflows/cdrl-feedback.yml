@@ -15,10 +15,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Verify reproducibility contract
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip install -r requirements.txt
           make setup
           make verify
+          make run
