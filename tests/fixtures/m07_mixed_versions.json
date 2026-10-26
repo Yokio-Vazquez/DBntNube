@@ -1,0 +1,67 @@
+{
+  "description": "Fixture M07 sintetico con eventos v1, v2, v3 e invalido.",
+  "source": "synthetic-fixture",
+  "items": [
+    {
+      "game_id": 1,
+      "event_key": "m07-v1-001",
+      "event_type": "session_started",
+      "occurred_at": "2026-10-25T10:00:00Z",
+      "source": "synthetic-fixture"
+    },
+    {
+      "game_id": 1,
+      "event_key": "m07-v1-002",
+      "event_type": "achievement_unlocked",
+      "occurred_at": "2026-10-25T10:01:00Z",
+      "source": "synthetic-fixture"
+    },
+    {
+      "game_id": 1,
+      "event_key": "m07-v2-001",
+      "event_type": "session_ended",
+      "occurred_at": "2026-10-25T10:02:00Z",
+      "source": "synthetic-fixture",
+      "schemaVersion": 2
+    },
+    {
+      "game_id": 2,
+      "event_key": "m07-v2-002",
+      "event_type": "session_started",
+      "occurred_at": "2026-10-25T10:03:00Z",
+      "source": "synthetic-fixture",
+      "schemaVersion": 2
+    },
+    {
+      "game_id": 2,
+      "event_key": "m07-v3-native",
+      "event_type": "achievement_unlocked",
+      "occurred_at": "2026-10-25T10:04:00Z",
+      "source": "synthetic-fixture",
+      "schemaVersion": 3,
+      "platform": "pc",
+      "metadata": {
+        "synthetic": true
+      }
+    },
+    {
+      "game_id": 2,
+      "event_key": "m07-v3-migrated",
+      "event_type": "session_ended",
+      "occurred_at": "2026-10-25T10:05:00Z",
+      "source": "synthetic-fixture",
+      "schemaVersion": 3,
+      "platform": "unknown",
+      "metadata": {},
+      "migratedFrom": 2
+    },
+    {
+      "game_id": 3,
+      "event_key": "m07-invalid",
+      "event_type": "session_started",
+      "occurred_at": "2026-10-25T10:06:00Z",
+      "source": "synthetic-fixture",
+      "schemaVersion": 99
+    }
+  ]
+}

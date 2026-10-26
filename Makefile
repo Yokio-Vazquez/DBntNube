@@ -1,4 +1,4 @@
-.PHONY: setup verify run security
+.PHONY: setup verify run security migrate rollback
 
 # Detecta automáticamente si el sistema usa 'python3' (Linux/Mac) o 'python' (Windows)
 PYTHON := $(shell python3 --version > /dev/null 2>&1 && echo python3 || echo python)
@@ -30,3 +30,9 @@ run:
 
 security:
 	@$(PYTHON) scripts/apply_security.py
+
+migrate:
+	@$(PYTHON) scripts/migrate_events.py
+
+rollback:
+	@$(PYTHON) scripts/migrate_events.py --rollback
