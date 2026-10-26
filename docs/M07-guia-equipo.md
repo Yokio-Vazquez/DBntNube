@@ -369,13 +369,13 @@ make setup && make verify && make run
 - [x] `src/event_schemas.py`, `src/schemas.py`, `src/main.py` con v3 (P1)
 - [x] `tests/test_m07_compat_read.py` (P1)
 - [x] `scripts/migrate_events.py` + `tests/fixtures/m07_mixed_versions.json` + targets `migrate`/`rollback` (P2)
-- [ ] `tests/test_m07_document_evolution.py` con normal, 2 límites, rollback y fallo declarado (P3)
-- [ ] `docs/ADR-007-evolucion-documentos.md` (P3)
-- [ ] `artifacts/m07-migration-results.json` con `idempotent: true` y `rollbackVerified: true`
-- [ ] `evidence/m07-document-evolution.json` con el SHA del código evaluado
-- [ ] `verify_base.py` valida M07
-- [ ] `make setup && make verify && make run` ✅ y GitHub Actions ✅
-- [ ] Tag `week-08-final` en GitHub
+- [x] `tests/test_m07_document_evolution.py` con normal, 2 límites, rollback y fallo declarado (P3)
+- [x] `docs/ADR-007-evolucion-documentos.md` (P3)
+- [x] `artifacts/m07-migration-results.json` con `idempotent: true` y `rollbackVerified: true`
+- [x] `evidence/m07-document-evolution.json` con el SHA del código evaluado
+- [x] `verify_base.py` valida M07
+- [x] `make setup && make verify && make run` ✅ y GitHub Actions ✅
+- [x] Tag `week-08-final` en GitHub
 - [ ] Classroom: URL del repo, tag, SHA exacto, salida de `make verify` y evidencia
 
 
@@ -403,4 +403,4 @@ Secuencia: commit de código -> ejecutar verificación y registrar ese SHA -> co
 
 La compatibilidad aditiva presupone clientes que toleran campos nuevos. Clientes estrictos deben solicitar `version=2`. En escritura v3, exigir `platform` válido; el default `unknown` sirve para lectura/upcast de documentos antiguos. Validar `EVENT_WRITE_VERSION` al inicio y probar ambos modos.
 
-`.gitignore` permite versionar `artifacts/m07-migration-results.json`; crearlo solo tras una ejecución real. Persona 1 está implementada y documentada en `docs/M07-persona1-implementacion.md`. Persona 2 está implementada con el script de migración, fixture y pruebas unitarias. La integración de Persona 3 sigue pendiente.
+`.gitignore` permite versionar `artifacts/m07-migration-results.json`; crearlo solo tras una ejecución real. Persona 1 está implementada y documentada en `docs/M07-persona1-implementacion.md`. Persona 2 está implementada con el script de migración, fixture y pruebas unitarias. Persona 3 completada: pruebas de integración, ADR-007, evidencia, demo y tag `week-08-final`.
