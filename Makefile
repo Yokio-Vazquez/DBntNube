@@ -29,6 +29,8 @@ run:
 	@$(MAKE) security
 	@alembic upgrade head
 	@$(MAKE) security
+	@echo "Servicios listos. Iniciando API en http://127.0.0.1:8000 ..."
+	@$(PYTHON) -m uvicorn src.main:app --host 127.0.0.1 --port 8000
 
 security:
 	@$(PYTHON) scripts/apply_security.py
