@@ -1,0 +1,109 @@
+{
+  "assignmentId": "m07-document-evolution",
+  "commitSha": "b65765b",
+  "milestone": "M07 — Evolución compatible de documentos",
+  "team": [
+    {
+      "persona": 1,
+      "role": "Modelo v3 y lectura compatible (API)",
+      "commitShas": ["0edd3061d2c251bcefebfce3838df6562aaed6af"],
+      "files": [
+        "src/event_schemas.py",
+        "src/schemas.py",
+        "src/main.py",
+        "tests/test_m07_compat_read.py",
+        "docs/M07-persona1-implementacion.md"
+      ],
+      "description": "EventV3, SUPPORTED_VERSIONS, detect_version, upcast_to_v3, downcast_from_v3, project. GET /events con parametro version opcional. Escritura configurable con EVENT_WRITE_VERSION. 43 pruebas unitarias parametrizadas."
+    },
+    {
+      "persona": 2,
+      "role": "Migración repetible y rollback (datos)",
+      "commitShas": [
+        "6d0bc1983c1432a5b417c2aa145a357b47c547e0",
+        "edf60835a898d39e5c81f62b24ac516fa49f0fe6"
+      ],
+      "files": [
+        "scripts/migrate_events.py",
+        "tests/fixtures/m07_mixed_versions.json",
+        "tests/test_m07_migrate_events.py"
+      ],
+      "description": "Script CLI con migrate_table y rollback_table. Scan paginado, put_item condicionado, snapshots SHA-256 para verificar idempotencia y rollback. Fixture sintetico con v1 implicita/explicita, dos v2, v3 nativo y un documento invalido (v99). 17 pruebas unitarias con MemoryTable."
+    },
+    {
+      "persona": 3,
+      "role": "Pruebas de integración, ADR, evidencia y entrega",
+      "commitShas": ["b65765b"],
+      "files": [
+        "tests/test_m07_document_evolution.py",
+        "scripts/m07_demo.py",
+        "docs/ADR-007-evolucion-documentos.md",
+        "evidence/m07-document-evolution.json",
+        "scripts/verify_base.py",
+        "Makefile"
+      ],
+      "description": "11 pruebas de integracion contra DynamoDB Local real en tabla aislada. Demo reproducible que genera artifacts/m07-migration-results.json. ADR-007 con compatibilidad y limites. verify_base.py valida evidencia, artifact y fixture M07. make verify ejecuta disaster_recovery, m07_demo, verify_base y pytest."
+    }
+  ],
+  "compatibilityTests": {
+    "mixedTableDefaultRead": "passed — GET /events sin version devuelve v1/v2/v3 tal cual estan almacenados, sin romper consumidores",
+    "projectionToV3": "passed — GET /events?version=3 devuelve todos los documentos como v3 con defaults (platform=unknown, metadata={})",
+    "projectionToV2": "passed — GET /events?version=2 omite platform, metadata, migratedFrom y marcas internas",
+    "projectionToV1": "passed — GET /events?version=1 proyecta a v1 con schemaVersion=1",
+    "invalidTargetVersion": "passed — GET /events?version=9 devuelve 422",
+    "unknownStoredVersion": "passed — documento con schemaVersion=99 en la tabla devuelve 500",
+    "apiAfterMigration": "passed — GET /events lee documentos migrados correctamente y mantiene proyecciones v1/v2/v3"
+  },
+  "migrationTests": {
+    "normalMigration": "passed — 4 documentos v1/v2 migrados a v3, 1 v3 nativo omitido, 1 invalido reportado",
+    "idempotentSecondRun": "passed — segunda migracion reporta migrated=0 con tabla identica a la primera",
+    "customAttributesPreserved": "passed — atributos adicionales originales (custom) conservados tras migracion",
+    "dryRunNoWrites": "passed — dry-run cuenta operaciones sin modificar la tabla"
+  },
+  "rollbackTests": {
+    "exactSnapshotRestore": "passed — migrate seguido de rollback deja la tabla identica al snapshot inicial",
+    "v1ImplicitRestored": "passed — v1 implicita (sin schemaVersion) restaurada sin schemaVersion",
+    "v1ExplicitRestored": "passed — v1 explicita (schemaVersion=1) restaurada con schemaVersion=1",
+    "nativeV3Untouched": "passed — v3 nativo sigue en v3 sin migratedFrom tras rollback",
+    "previouslyMigratedV3ToV2": "passed — v3 con migratedFrom=2 revertido a v2",
+    "emptyTableNoop": "passed — migrate y rollback sobre tabla vacia regresan todo en 0"
+  },
+  "failureTests": {
+    "invalidDocumentInFailed": "passed — documento con schemaVersion=99 aparece en failed y no se modifica",
+    "exitCodeTwo": "passed — CLI sale con codigo 2 cuando hay documentos invalidos",
+    "exitCodeZero": "passed — CLI sale con codigo 0 cuando no hay documentos invalidos"
+  },
+  "commands": {
+    "setup": "make setup",
+    "verify": "make verify",
+    "run": "make run",
+    "migrate": "make migrate",
+    "rollback": "make rollback",
+    "unitTests": "python -m pytest tests/test_m07_compat_read.py tests/test_m07_migrate_events.py -q",
+    "integrationTests": "python -m pytest tests/test_m07_document_evolution.py -q",
+    "demo": "python scripts/m07_demo.py"
+  },
+  "results": {
+    "unitTestsP1": "43 passed",
+    "unitTestsP2": "17 passed",
+    "integrationTestsP3": "11 passed",
+    "totalM07Tests": "71 passed",
+    "demoArtifact": "artifacts/m07-migration-results.json con idempotent=true y rollbackVerified=true",
+    "makeVerify": "pendiente de ejecucion final tras commit de evidencia"
+  },
+  "assumptions": [
+    "DynamoDB Local esta corriendo en el puerto configurado (DYNAMODB_PORT, default 8000)",
+    "Los escritores y otros migradores estan detenidos durante migrate/rollback",
+    "Los consumidores existentes del API toleran campos nuevos o solicitan version=2",
+    "La tabla de pruebas M07 (DYNAMODB_TABLE_M07_TEST) es exclusiva y distinta de cdrl_events",
+    "El fixture contiene datos sinteticos representativos de las versiones existentes"
+  ],
+  "limitations": [
+    "El rollback pierde platform y metadata de los documentos migrados",
+    "Los v3 nativos no se pueden revertir (no tienen version original)",
+    "La migracion no es atomica: es por documento, repetible pero no transaccional",
+    "Las condiciones no detectan cambios concurrentes en otros atributos",
+    "La fase contract (eliminar soporte v1/v2) queda fuera de alcance",
+    "dry-run no demuestra idempotencia ni rollback"
+  ]
+}

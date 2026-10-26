@@ -15,8 +15,10 @@ setup:
 	@echo "Entorno CDRL preparado."
 
 verify:
-	@$(PYTHON) scripts/verify_base.py
 	@$(PYTHON) scripts/disaster_recovery.py
+	@$(PYTHON) scripts/m07_demo.py
+	@$(PYTHON) scripts/verify_base.py
+	@$(PYTHON) -c "import pathlib; pathlib.Path('artifacts/test_report.xml').unlink(missing_ok=True)"
 	@$(PYTHON) -m pytest tests/ --junitxml=artifacts/test_report.xml
 
 run:

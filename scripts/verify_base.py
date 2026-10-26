@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Verificación portable del contrato CDRL (equivalente a verify_base.sh)."""
 import json
+import os
 import re
 import subprocess
 import sys
@@ -36,6 +37,16 @@ REQUIRED_FILES = [
     "scripts/disaster_recovery.py",
     "evidence/m06-evolucion-auditoria.json",
     "artifacts/m06-resultados.json",
+    # M07
+    "docs/ADR-007-evolucion-documentos.md",
+    "evidence/m07-document-evolution.json",
+    "artifacts/m07-migration-results.json",
+    "scripts/migrate_events.py",
+    "scripts/m07_demo.py",
+    "tests/fixtures/m07_mixed_versions.json",
+    "tests/test_m07_compat_read.py",
+    "tests/test_m07_migrate_events.py",
+    "tests/test_m07_document_evolution.py",
 ]
 
 # 1. Verificar archivos requeridos
@@ -193,3 +204,82 @@ if len(fixture.get("items", [])) < 1:
     sys.exit(1)
 
 print("M05 + M06 validation passed")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 10. Validar evidencia, artifact y fixture M07
+#     (make verify ejecuta scripts/m07_demo.py antes para regenerar el artifact)
+# ─────────────────────────────────────────────────────────────────────────────
+def fail(message: str) -> None:
+    print(f"ERROR: {message}", file=sys.stderr)
+    sys.exit(1)
+
+
+SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+HASH_RE = re.compile(r"^[0-9a-f]{64}$")
+
+evidence_m07 = json.loads(Path("evidence/m07-document-evolution.json").read_text(encoding="utf-8"))
+required_m07 = {
+    "assignmentId", "commitSha", "team", "compatibilityTests", "migrationTests",
+    "rollbackTests", "failureTests", "commands", "results", "assumptions", "limitations",
+}
+missing_m07 = sorted(required_m07.difference(evidence_m07))
+if missing_m07:
+    fail(f"missing M07 evidence fields: {', '.join(missing_m07)}")
+if evidence_m07["assignmentId"] != "m07-document-evolution":
+    fail("unexpected M07 assignmentId")
+if not SHA_RE.match(str(evidence_m07["commitSha"])):
+    fail("M07 commitSha must be a full 40-character git SHA")
+team = evidence_m07["team"]
+if sorted(member.get("persona") for member in team) != [1, 2, 3]:
+    fail("M07 evidence must document Personas 1, 2 and 3")
+for member in team:
+    if not member.get("role") or not member.get("files") or not member.get("commitShas"):
+        fail(f"M07 persona {member.get('persona')} needs role, files and commitShas")
+    if not all(SHA_RE.match(sha) for sha in member["commitShas"]):
+        fail(f"M07 persona {member.get('persona')} has an invalid commit SHA")
+for section in ("compatibilityTests", "migrationTests", "rollbackTests", "failureTests"):
+    if not evidence_m07[section]:
+        fail(f"M07 evidence section {section} is empty")
+if not evidence_m07["limitations"]:
+    fail("M07 evidence must declare limitations")
+
+artifact_m07 = json.loads(Path("artifacts/m07-migration-results.json").read_text(encoding="utf-8"))
+if artifact_m07.get("assignmentId") != "m07-document-evolution":
+    fail("unexpected M07 artifact assignmentId")
+if artifact_m07.get("table") in {"cdrl_events", os.getenv("DYNAMODB_TABLE", "cdrl_events")}:
+    fail("M07 artifact must come from the isolated test table, not cdrl_events")
+if artifact_m07.get("idempotent") is not True or artifact_m07.get("rollbackVerified") is not True:
+    fail("M07 artifact must report idempotent == true and rollbackVerified == true")
+runs = artifact_m07.get("runs", [])
+if [run.get("operation") for run in runs] != ["migrate", "migrate", "rollback"] or any(
+    run.get("dryRun") is not False for run in runs
+):
+    fail("M07 artifact must contain exactly migrate, migrate, rollback real runs")
+first, second, rollback = runs
+if (first.get("migrated"), first.get("skipped"), first.get("failed")) != (4, 1, 1):
+    fail("M07 first migration must report migrated=4, skipped=1, failed=1")
+if second.get("migrated") != 0 or rollback.get("rolledBack") != 4:
+    fail("M07 second migration must migrate 0 and rollback must restore 4")
+for run in runs:
+    details = run.get("failureDetails", [])
+    if [detail.get("event_key") for detail in details] != ["m07-invalid"]:
+        fail("M07 runs must report only the expected invalid document")
+    if not (HASH_RE.match(str(run.get("snapshotBefore"))) and HASH_RE.match(str(run.get("snapshotAfter")))):
+        fail("M07 runs must include SHA-256 snapshots")
+initial = artifact_m07.get("initialSnapshot")
+if not (
+    initial == first["snapshotBefore"] == rollback["snapshotAfter"]
+    and first["snapshotAfter"] == second["snapshotBefore"] == second["snapshotAfter"]
+):
+    fail("M07 artifact snapshots do not prove idempotence and exact rollback")
+if artifact_m07.get("expectations") and not all(artifact_m07["expectations"].values()):
+    fail("M07 artifact contains failed expectations")
+
+fixture_m07 = json.loads(Path("tests/fixtures/m07_mixed_versions.json").read_text(encoding="utf-8"))
+versions = sorted(str(item.get("schemaVersion", "implicit-1")) for item in fixture_m07.get("items", []))
+if versions != sorted(["implicit-1", "1", "2", "2", "3", "99"]):
+    fail("m07_mixed_versions.json must contain v1 implicit/explicit, two v2, native v3 and one invalid")
+if any(item.get("source") != "synthetic-fixture" for item in fixture_m07["items"]):
+    fail("m07_mixed_versions.json must only contain synthetic data")
+
+print("M07 validation passed")

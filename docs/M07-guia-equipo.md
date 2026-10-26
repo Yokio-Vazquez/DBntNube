@@ -368,7 +368,7 @@ make setup && make verify && make run
 
 - [x] `src/event_schemas.py`, `src/schemas.py`, `src/main.py` con v3 (P1)
 - [x] `tests/test_m07_compat_read.py` (P1)
-- [ ] `scripts/migrate_events.py` + `tests/fixtures/m07_mixed_versions.json` + targets `migrate`/`rollback` (P2)
+- [x] `scripts/migrate_events.py` + `tests/fixtures/m07_mixed_versions.json` + targets `migrate`/`rollback` (P2)
 - [ ] `tests/test_m07_document_evolution.py` con normal, 2 límites, rollback y fallo declarado (P3)
 - [ ] `docs/ADR-007-evolucion-documentos.md` (P3)
 - [ ] `artifacts/m07-migration-results.json` con `idempotent: true` y `rollbackVerified: true`
@@ -403,4 +403,4 @@ Secuencia: commit de código -> ejecutar verificación y registrar ese SHA -> co
 
 La compatibilidad aditiva presupone clientes que toleran campos nuevos. Clientes estrictos deben solicitar `version=2`. En escritura v3, exigir `platform` válido; el default `unknown` sirve para lectura/upcast de documentos antiguos. Validar `EVENT_WRITE_VERSION` al inicio y probar ambos modos.
 
-`.gitignore` permite versionar `artifacts/m07-migration-results.json`; crearlo solo tras una ejecución real. Persona 1 está implementada y documentada en `docs/M07-persona1-implementacion.md`; la migración e integración de Personas 2 y 3 siguen pendientes.
+`.gitignore` permite versionar `artifacts/m07-migration-results.json`; crearlo solo tras una ejecución real. Persona 1 está implementada y documentada en `docs/M07-persona1-implementacion.md`. Persona 2 está implementada con el script de migración, fixture y pruebas unitarias. La integración de Persona 3 sigue pendiente.

@@ -1,0 +1,90 @@
+{
+  "assignmentId": "m07-document-evolution",
+  "table": "cdrl_events_m07_test",
+  "fixture": "tests/fixtures/m07_mixed_versions.json",
+  "runs": [
+    {
+      "operation": "migrate",
+      "scanned": 6,
+      "migrated": 4,
+      "skipped": 1,
+      "durationSeconds": 0.0443,
+      "failed": 1,
+      "failureDetails": [
+        {
+          "game_id": {
+            "$decimal": "3"
+          },
+          "event_key": "m07-invalid",
+          "reason": "Unsupported event schema version: 99"
+        }
+      ],
+      "dryRun": false,
+      "snapshotBefore": "302cc2edf32581150731cb89aa92a2a4d5389094fc926948f657aaf19e17671a",
+      "snapshotAfter": "a59294ca7fe8675eab4dac17dd3cca0c31eeb6b25a215397f47d47ed38cbb730"
+    },
+    {
+      "operation": "migrate",
+      "scanned": 6,
+      "migrated": 0,
+      "skipped": 5,
+      "durationSeconds": 0.0071,
+      "failed": 1,
+      "failureDetails": [
+        {
+          "game_id": {
+            "$decimal": "3"
+          },
+          "event_key": "m07-invalid",
+          "reason": "Unsupported event schema version: 99"
+        }
+      ],
+      "dryRun": false,
+      "snapshotBefore": "a59294ca7fe8675eab4dac17dd3cca0c31eeb6b25a215397f47d47ed38cbb730",
+      "snapshotAfter": "a59294ca7fe8675eab4dac17dd3cca0c31eeb6b25a215397f47d47ed38cbb730"
+    },
+    {
+      "operation": "rollback",
+      "scanned": 6,
+      "rolledBack": 4,
+      "skipped": 1,
+      "durationSeconds": 0.0777,
+      "failed": 1,
+      "failureDetails": [
+        {
+          "game_id": {
+            "$decimal": "3"
+          },
+          "event_key": "m07-invalid",
+          "reason": "Unsupported event schema version: 99"
+        }
+      ],
+      "dryRun": false,
+      "snapshotBefore": "a59294ca7fe8675eab4dac17dd3cca0c31eeb6b25a215397f47d47ed38cbb730",
+      "snapshotAfter": "302cc2edf32581150731cb89aa92a2a4d5389094fc926948f657aaf19e17671a"
+    }
+  ],
+  "initialSnapshot": "302cc2edf32581150731cb89aa92a2a4d5389094fc926948f657aaf19e17671a",
+  "idempotent": true,
+  "rollbackVerified": true,
+  "generatedBy": "scripts/m07_demo.py",
+  "generatedAt": "2026-10-26T03:37:35Z",
+  "cliExitCodes": [
+    2,
+    2,
+    2
+  ],
+  "finalSnapshot": "302cc2edf32581150731cb89aa92a2a4d5389094fc926948f657aaf19e17671a",
+  "expectations": {
+    "threeRealRuns": true,
+    "exitCodesDeclareInvalidDocument": true,
+    "firstMigration": true,
+    "invalidDocumentReported": true,
+    "secondMigrationMigratesNothing": true,
+    "secondMigrationLeavesTableIdentical": true,
+    "rollbackRestoresFour": true,
+    "rollbackMatchesInitialSnapshot": true,
+    "idempotent": true,
+    "rollbackVerified": true
+  }
+}
