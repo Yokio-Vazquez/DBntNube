@@ -1,6 +1,6 @@
 {
   "assignmentId": "m07-document-evolution",
-  "commitSha": "b65765b",
+  "commitSha": "00c52394f4d047f91d45ae0b1d3c1363c4a2e0a4",
   "milestone": "M07 — Evolución compatible de documentos",
   "team": [
     {
@@ -33,7 +33,7 @@
     {
       "persona": 3,
       "role": "Pruebas de integración, ADR, evidencia y entrega",
-      "commitShas": ["b65765b"],
+      "commitShas": ["00c52394f4d047f91d45ae0b1d3c1363c4a2e0a4"],
       "files": [
         "tests/test_m07_document_evolution.py",
         "scripts/m07_demo.py",
