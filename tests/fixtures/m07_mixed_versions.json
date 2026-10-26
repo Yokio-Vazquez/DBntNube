@@ -14,7 +14,12 @@
       "event_key": "m07-v1-002",
       "event_type": "achievement_unlocked",
       "occurred_at": "2026-10-25T10:01:00Z",
-      "source": "synthetic-fixture"
+      "source": "synthetic-fixture",
+      "schemaVersion": 1,
+      "custom": {
+        "keep": true,
+        "labels": ["first", "original"]
+      }
     },
     {
       "game_id": 1,
@@ -30,7 +35,10 @@
       "event_type": "session_started",
       "occurred_at": "2026-10-25T10:03:00Z",
       "source": "synthetic-fixture",
-      "schemaVersion": 2
+      "schemaVersion": 2,
+      "custom": {
+        "score": 12
+      }
     },
     {
       "game_id": 2,
@@ -43,17 +51,6 @@
       "metadata": {
         "synthetic": true
       }
-    },
-    {
-      "game_id": 2,
-      "event_key": "m07-v3-migrated",
-      "event_type": "session_ended",
-      "occurred_at": "2026-10-25T10:05:00Z",
-      "source": "synthetic-fixture",
-      "schemaVersion": 3,
-      "platform": "unknown",
-      "metadata": {},
-      "migratedFrom": 2
     },
     {
       "game_id": 3,
