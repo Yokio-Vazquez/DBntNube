@@ -25,7 +25,7 @@ La versión 3 agrega campos opcionales con default; no renombra ni elimina ningu
 
 ### Lectura compatible (expand)
 
-`normalize_event()` acepta v1, v2 y v3 simultáneamente. `GET /events` conserva la versión de cada documento tal cual está almacenado; los consumidores existentes no ven campos nuevos a menos que lo pidan.
+`normalize_event()` acepta v1, v2 y v3 simultáneamente. `GET /events` conserva la versión de cada documento tal cual está almacenado. Antes de migrar, los documentos v1/v2 no contienen campos de v3. Después de migrar, los documentos ya son v3 y la respuesta sin parámetro `version` incluye `platform`, `metadata` y `migratedFrom`. Los consumidores estrictos que no toleran campos nuevos deben solicitar `GET /events?version=2` para obtener una proyección sin los campos de v3.
 
 Un parámetro opcional `GET /events?version=N` aplica proyección:
 - `version=3` → todos los documentos se presentan como v3, con defaults para los campos faltantes.

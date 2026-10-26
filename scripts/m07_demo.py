@@ -135,6 +135,7 @@ def _expectations(report: dict, exit_codes: list[int], initial: str, final: str)
 def run_demo(artifact_path: Path = ARTIFACT_PATH) -> int:
     table_name = isolated_table_name()
     print(f"[m07_demo] Tabla aislada: {table_name}")
+    cleanup_failed = False
     try:
         drop_table(table_name)  # restos de una ejecución interrumpida
         table = create_isolated_table(table_name)
@@ -156,6 +157,7 @@ def run_demo(artifact_path: Path = ARTIFACT_PATH) -> int:
             print(f"[m07_demo] Tabla {table_name} eliminada")
         except (BotoCoreError, ClientError) as error:
             print(f"ERROR: no se pudo eliminar {table_name}: {error}", file=sys.stderr)
+            cleanup_failed = True
 
     checks = _expectations(report, exit_codes, initial, final)
     report["fixture"] = FIXTURE_PATH.relative_to(ROOT).as_posix()
@@ -176,13 +178,17 @@ def run_demo(artifact_path: Path = ARTIFACT_PATH) -> int:
         print(f"ERROR: expectativas M07 no cumplidas: {', '.join(failed_checks)}", file=sys.stderr)
         return 1
 
+    if cleanup_failed:
+        report["cleanupIncomplete"] = True
+        print("ERROR: la demo paso pero la limpieza de la tabla fallo", file=sys.stderr)
+
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
     artifact_path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(
         f"[m07_demo] idempotent={report['idempotent']} rollbackVerified={report['rollbackVerified']} "
         f"-> {artifact_path.relative_to(ROOT).as_posix()}"
     )
-    return 0
+    return 1 if cleanup_failed else 0
 
 
 if __name__ == "__main__":

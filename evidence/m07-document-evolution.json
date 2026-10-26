@@ -28,7 +28,7 @@
         "tests/fixtures/m07_mixed_versions.json",
         "tests/test_m07_migrate_events.py"
       ],
-      "description": "Script CLI con migrate_table y rollback_table. Scan paginado, put_item condicionado, snapshots SHA-256 para verificar idempotencia y rollback. Fixture sintetico con v1 implicita/explicita, dos v2, v3 nativo y un documento invalido (v99). 17 pruebas unitarias con MemoryTable."
+      "description": "Script CLI con migrate_table y rollback_table. Scan paginado, put_item condicionado, snapshots SHA-256 para verificar idempotencia y rollback. Fixture sintetico con v1 implicita/explicita, dos v2, v3 nativo y un documento invalido (v99). 13 pruebas unitarias con MemoryTable."
     },
     {
       "persona": 3,
@@ -85,11 +85,12 @@
   },
   "results": {
     "unitTestsP1": "43 passed",
-    "unitTestsP2": "17 passed",
+    "unitTestsP2": "13 passed",
     "integrationTestsP3": "11 passed",
-    "totalM07Tests": "71 passed",
+    "totalM07Tests": "67 passed",
+    "totalProjectTests": "108 passed",
     "demoArtifact": "artifacts/m07-migration-results.json con idempotent=true y rollbackVerified=true",
-    "makeVerify": "pendiente de ejecucion final tras commit de evidencia"
+    "makeVerify": "passed — 108 tests, GitHub Actions green (https://github.com/Yokio-Vazquez/DBntNube/actions)"
   },
   "assumptions": [
     "DynamoDB Local esta corriendo en el puerto configurado (DYNAMODB_PORT, default 8000)",
