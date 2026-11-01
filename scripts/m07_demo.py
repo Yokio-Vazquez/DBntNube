@@ -34,7 +34,7 @@ from botocore.exceptions import BotoCoreError, ClientError  # noqa: E402
 import scripts.migrate_events as migration  # noqa: E402
 from src.nosql import (  # noqa: E402
     ATTRIBUTE_DEFINITIONS,
-    EVENT_TYPE_INDEX_DEFINITION,
+    GLOBAL_SECONDARY_INDEXES,
     TABLE_KEY_SCHEMA,
     dynamodb_resource,
 )
@@ -71,7 +71,7 @@ def create_isolated_table(name: str):
         TableName=name,
         KeySchema=TABLE_KEY_SCHEMA,
         AttributeDefinitions=ATTRIBUTE_DEFINITIONS,
-        GlobalSecondaryIndexes=[EVENT_TYPE_INDEX_DEFINITION],
+        GlobalSecondaryIndexes=GLOBAL_SECONDARY_INDEXES,
         BillingMode="PAY_PER_REQUEST",
     )
     client.get_waiter("table_exists").wait(TableName=name)

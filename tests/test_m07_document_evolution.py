@@ -69,9 +69,9 @@ def loaded_table(m07_table):
 def test_isolated_table_mirrors_events_schema(m07_table):
     description = m07_table.meta.client.describe_table(TableName=m07_table.name)["Table"]
     assert description["KeySchema"] == nosql.TABLE_KEY_SCHEMA
-    assert [index["IndexName"] for index in description["GlobalSecondaryIndexes"]] == [
-        nosql.EVENT_TYPE_INDEX
-    ]
+    assert {index["IndexName"] for index in description["GlobalSecondaryIndexes"]} == {
+        index["IndexName"] for index in nosql.GLOBAL_SECONDARY_INDEXES
+    }
 
 
 def test_isolated_table_name_rejects_shared_table(monkeypatch):

@@ -17,9 +17,48 @@ from .event_schemas import (
     normalize_event,
 )
 from .models import Game, GameMetric
-from .nosql import query_events
+import os
+from .pagination import InvalidCursor
+from .nosql import query_events, query_events_page
 
 app = FastAPI(title="CDRL API - Métricas de Videojuegos")
+
+
+def pagination_limits():
+    try:
+        default = int(os.getenv("EVENTS_PAGE_DEFAULT_LIMIT", "25"))
+        maximum = int(os.getenv("EVENTS_PAGE_MAX_LIMIT", "100"))
+        if not 1 <= default <= maximum <= 1000:
+            raise ValueError()
+    except ValueError as error:
+        raise ValueError("EVENTS_PAGE limits deben cumplir 1 <= default <= max <= 1000") from error
+    return default, maximum
+
+
+EVENTS_PAGE_DEFAULT_LIMIT, EVENTS_PAGE_MAX_LIMIT = pagination_limits()
+
+
+@app.get("/events/page", responses={400: {"description": "Cursor invalido"},
+                                   500: {"description": "Version almacenada no soportada"},
+                                   503: {"description": "DynamoDB no disponible"}})
+def get_events_page(
+    game_id: int = Query(..., gt=0),
+    limit: int = Query(EVENTS_PAGE_DEFAULT_LIMIT, ge=1, le=EVENTS_PAGE_MAX_LIMIT),
+    cursor: str | None = None,
+    version: int | None = Query(None, ge=1, le=3),
+):
+    try:
+        page = query_events_page(game_id, limit, cursor)
+        items = [normalize_event(project(item, version) if version is not None else item)
+                 .model_dump(by_alias=True, exclude_none=True) for item in page["items"]]
+        return {"items": items, "nextCursor": page["nextCursor"],
+                "limit": limit, "order": "occurred_at_desc"}
+    except InvalidCursor as error:
+        raise HTTPException(400, detail=str(error)) from error
+    except UnsupportedEventVersion as error:
+        raise HTTPException(500, detail="DynamoDB contiene un documento con una version no soportada.") from error
+    except (BotoCoreError, ClientError) as error:
+        raise HTTPException(503, detail="Service Unavailable: No se pudo consultar DynamoDB.") from error
 
 class GameMetricBase(BaseModel):
     model_config = ConfigDict(extra='forbid')

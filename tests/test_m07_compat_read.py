@@ -192,5 +192,7 @@ def test_writer_persists_configured_document(monkeypatch, legacy, version):
     monkeypatch.setattr(nosql, "dynamodb_resource", lambda: resource)
     assert nosql.create_event(event) is True
     saved = resource.Table.return_value.put_item.call_args.kwargs["Item"]
+    # M08 adds an internal index key without changing public version fields.
+    assert saved.pop("game_time_key") == legacy["occurred_at"] + "#" + legacy["event_key"]
     assert saved == dict(legacy, schemaVersion=int(version))
     assert "migratedFrom" not in saved

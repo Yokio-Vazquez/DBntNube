@@ -128,6 +128,25 @@ def check_api() -> bool:
             mark = "OK " if ok else "ERR"
             extra = f" ({size} elementos)" if size is not None else ""
             print(f"[API]        {mark} GET {path} -> {status}{extra}")
+
+        status, first = _get("/events/page?game_id=1&limit=2")
+        pagination_ok = status == 200 and isinstance(first, dict)
+        # The default fixture has exactly two events for game 1; use limit=1
+        # in that case so the critical path actually exercises a continuation.
+        page_limit = 2
+        if pagination_ok and not first.get("nextCursor"):
+            page_limit = 1
+            status, first = _get("/events/page?game_id=1&limit=1")
+            pagination_ok = status == 200 and isinstance(first, dict)
+        pagination_ok = pagination_ok and bool(first.get("nextCursor"))
+        if pagination_ok:
+            from urllib.parse import urlencode
+            status, second = _get("/events/page?" + urlencode({
+                "game_id": 1, "limit": page_limit, "cursor": first["nextCursor"]}))
+            pagination_ok = status == 200 and not (
+                {item["event_key"] for item in first["items"]} &
+                {item["event_key"] for item in second["items"]})
+        results.append({"path": "/events/page", "status": 200 if pagination_ok else 500})
     finally:
         process.terminate()
         try:
