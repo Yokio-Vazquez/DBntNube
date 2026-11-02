@@ -327,14 +327,19 @@ def _wait_for_index(
                 baseline_table, game_id, limit, (deep_page - 1) * limit
             )
         )
-        page1 = _page_keys(_indexed_page(indexed_table, game_id, limit, 1))
-        deep = _page_keys(
-            _indexed_page(indexed_table, game_id, limit, deep_page)
-        )
-        if page1 == expected_page1 and deep == expected_deep:
-            return _check_correctness(
-                baseline_table, indexed_table, game_id, limit, deep_page
+        try:
+            page1 = _page_keys(_indexed_page(indexed_table, game_id, limit, 1))
+            deep = _page_keys(
+                _indexed_page(indexed_table, game_id, limit, deep_page)
             )
+            if page1 == expected_page1 and deep == expected_deep:
+                return _check_correctness(
+                    baseline_table, indexed_table, game_id, limit, deep_page
+                )
+        except BenchmarkCorrectnessError:
+            # A newly populated GSI can temporarily lack the deep page.
+            # Retry visibility/correctness only; service and configuration errors propagate.
+            pass
         time.sleep(1)
     raise BenchmarkCorrectnessError(
         "El índice no alcanzó visibilidad completa para las páginas comparadas."
@@ -539,8 +544,10 @@ def run_benchmark(mode: str = "quick") -> dict:
         hot_game_count = sum(item["game_id"] == 1 for item in events)
         if hot_game_count < settings["deepPage"] * settings["pageSize"]:
             raise ValueError("El juego caliente es menor que la página profunda.")
+        # Both read strategies use identical documents in the same physical table.
+        # The table without the extra GSI is reserved for the write comparison.
         correctness = _wait_for_index(
-            baseline_table,
+            indexed_table,
             indexed_table,
             1,
             settings["pageSize"],
@@ -560,14 +567,14 @@ def run_benchmark(mode: str = "quick") -> dict:
 
         scenarios = {
             "baseline_page1": lambda: _scenario_result(
-                baseline_offset_page(baseline_table, 1, settings["pageSize"], 0)
+                baseline_offset_page(indexed_table, 1, settings["pageSize"], 0)
             ),
             "indexed_page1": lambda: _scenario_result(
                 query_events_page(1, settings["pageSize"], table=indexed_table)
             ),
             "baseline_deep": lambda: _scenario_result(
                 baseline_offset_page(
-                    baseline_table,
+                    indexed_table,
                     1,
                     settings["pageSize"],
                     (settings["deepPage"] - 1) * settings["pageSize"],
@@ -582,7 +589,7 @@ def run_benchmark(mode: str = "quick") -> dict:
                 )
             ),
             "baseline_walk": lambda: _walk_baseline(
-                baseline_table,
+                indexed_table,
                 1,
                 settings["pageSize"],
                 settings["deepPage"],
@@ -618,6 +625,15 @@ def run_benchmark(mode: str = "quick") -> dict:
             "assignmentId": ASSIGNMENT_ID,
             "table": indexed_name,
             "tables": {"baseline": baseline_name, "indexed": indexed_name},
+            "readComparison": {
+                "baselineTable": indexed_name,
+                "indexedTable": indexed_name,
+                "samePhysicalTable": True,
+            },
+            "writeComparison": {
+                "baselineTable": baseline_name,
+                "indexedTable": indexed_name,
+            },
             "mode": mode,
             "generatedAt": generated_at,
             "commitSha": commit_sha,

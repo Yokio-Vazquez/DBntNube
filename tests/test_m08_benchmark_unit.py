@@ -333,8 +333,35 @@ def test_quick_benchmark_runs_and_deletes_its_isolated_tables(monkeypatch):
     }.items():
         monkeypatch.setenv(name, value)
 
+    original_baseline = benchmark.baseline_offset_page
+    original_write_cost = benchmark._measure_write_cost
+    read_calls = []
+    write_calls = []
+
+    def checked_baseline(table, *args):
+        # All baseline reads (visibility, correctness, page/deep/walk) must
+        # use the table with both GSIs, just like the indexed strategy.
+        indexed = [t for t, indexes in resource.meta.client.tables.values()
+                   if len(indexes) == 2]
+        assert indexed == [table]
+        read_calls.append(table)
+        return original_baseline(table, *args)
+
+    def checked_write_cost(baseline, indexed, *args):
+        assert baseline is not indexed
+        schemas = {id(t): indexes for t, indexes in resource.meta.client.tables.values()}
+        assert len(schemas[id(baseline)]) == 1
+        assert len(schemas[id(indexed)]) == 2
+        write_calls.append((baseline, indexed))
+        return original_write_cost(baseline, indexed, *args)
+
+    monkeypatch.setattr(benchmark, "baseline_offset_page", checked_baseline)
+    monkeypatch.setattr(benchmark, "_measure_write_cost", checked_write_cost)
     artifact = benchmark.run_benchmark("quick")
     repeated = benchmark.run_benchmark("quick")
+    assert read_calls and len(write_calls) == 2
+    assert artifact["readComparison"]["baselineTable"] == artifact["readComparison"]["indexedTable"]
+    assert artifact["writeComparison"]["baselineTable"] != artifact["writeComparison"]["indexedTable"]
 
     assert artifact["correctness"]["sameResultSet"] is True
     assert artifact["gate"]["passed"] is True
@@ -371,3 +398,70 @@ def test_cli_returns_two_when_deterministic_gate_fails(tmp_path, monkeypatch):
     )
 
     assert exit_code == 2
+
+
+@pytest.mark.parametrize("transient", ["missing_page", "wrong_items", "final_check"])
+def test_index_visibility_retries_until_pages_match(monkeypatch, transient):
+    table = FakeDynamoTable()
+    events = benchmark.generate_events(42, 30, 3, 0.6)
+    benchmark.load_events(table, [benchmark.with_time_key(item) for item in events])
+    original_page = benchmark._indexed_page
+    original_check = benchmark._check_correctness
+    calls = []
+    sleeps = []
+
+    def delayed_page(*args):
+        calls.append(args[-1])
+        if len(calls) == 2:
+            if transient == "missing_page":
+                raise benchmark.BenchmarkCorrectnessError("deep page not visible yet")
+            if transient == "wrong_items":
+                return {"items": []}
+        return original_page(*args)
+
+    checks = []
+
+    def delayed_check(*args):
+        checks.append(True)
+        if transient == "final_check" and len(checks) == 1:
+            raise benchmark.BenchmarkCorrectnessError("visibility changed")
+        return original_check(*args)
+
+    monkeypatch.setattr(benchmark, "_indexed_page", delayed_page)
+    monkeypatch.setattr(benchmark, "_check_correctness", delayed_check)
+    monkeypatch.setattr(benchmark.time, "sleep", sleeps.append)
+    assert benchmark._wait_for_index(table, table, 1, 3, 2, 18)["sameResultSet"]
+    assert sleeps == [1]
+
+
+def test_index_visibility_times_out_without_reporting_success(monkeypatch):
+    table = FakeDynamoTable()
+    events = benchmark.generate_events(42, 30, 3, 0.6)
+    benchmark.load_events(table, [benchmark.with_time_key(item) for item in events])
+    sleeps = []
+
+    def missing_page(*args):
+        raise benchmark.BenchmarkCorrectnessError("not visible")
+
+    monkeypatch.setattr(benchmark, "_indexed_page", missing_page)
+    monkeypatch.setattr(benchmark.time, "sleep", sleeps.append)
+    with pytest.raises(benchmark.BenchmarkCorrectnessError, match="visibilidad"):
+        benchmark._wait_for_index(table, table, 1, 3, 2, 18)
+    assert len(sleeps) == 60
+
+
+def test_index_visibility_does_not_hide_service_errors(monkeypatch):
+    from botocore.exceptions import EndpointConnectionError
+    table = FakeDynamoTable()
+    benchmark.load_events(table, [benchmark.with_time_key(item) for item in
+                                benchmark.generate_events(42, 30, 3, 0.6)])
+    sleeps = []
+
+    def unavailable(*args):
+        raise EndpointConnectionError(endpoint_url="http://invalid")
+
+    monkeypatch.setattr(benchmark, "_indexed_page", unavailable)
+    monkeypatch.setattr(benchmark.time, "sleep", sleeps.append)
+    with pytest.raises(EndpointConnectionError):
+        benchmark._wait_for_index(table, table, 1, 3, 2, 18)
+    assert sleeps == []
