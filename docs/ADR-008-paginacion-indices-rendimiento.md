@@ -57,14 +57,26 @@ completar el lote o agotar los datos.
 
 ### Contrato de estabilidad
 
-1. Un documento que existía al iniciar el recorrido y no se borró aparece
-   **exactamente una vez**.
+Las garantías siguientes aplican cuando los documentos originales ya eran
+**visibles en el GSI al iniciar el recorrido** y sus claves de orden
+(`game_time_key`) no se modifican durante el recorrido:
+
+1. Un documento que cumple las precondiciones anteriores y no se borró
+   aparece **exactamente una vez**.
 2. Un documento insertado **más reciente** que la posición del cursor **no
    aparece** en las páginas siguientes.
 3. Un documento insertado **más antiguo** puede aparecer como mucho una vez.
-4. Los empates en `occurred_at` no producen duplicados ni pérdidas.
+4. Los empates en `occurred_at` no producen duplicados ni pérdidas
+   (la clave compuesta `game_time_key` garantiza orden total).
+
+**Limitaciones del contrato:**
+
 5. **No hay snapshot transaccional.** El GSI es eventualmente consistente;
-   no admite `ConsistentRead`.
+   no admite `ConsistentRead`. Un documento recién insertado puede no
+   ser visible en el índice durante un breve período. Si un documento
+   aún no era visible al iniciar el recorrido, la garantía (1) no aplica.
+6. Si un documento se borra o se modifica su `game_time_key` entre dos
+   páginas, puede aparecer cero o dos veces.
 
 ### Compatibilidad
 
@@ -87,15 +99,15 @@ completar el lote o agotar los datos.
 ## Trade-offs medidos
 
 Los números provienen de `artifacts/m08-benchmark-results.json` (modo quick,
-DynamoDB Local).
+DynamoDB Local, commit `4f798dc`).
 
 ### Lectura: cursor vs offset
 
 | Escenario | Baseline (offset) p50 | Indexado (cursor) p50 | Ratio p50 | Items leídos baseline | Items leídos indexado | Ratio items |
 |---|---|---|---|---|---|---|
-| Página 1 | 181.7 ms | 11.5 ms | 15.8× | 72 000 | 1 040 | 69.2× |
-| Página profunda (10) | 179.4 ms | 10.8 ms | 16.6× | 72 000 | 1 040 | 69.2× |
-| Walk (10 páginas) | 1 890.8 ms | 102.6 ms | 18.4× | 720 000 | 10 400 | 69.2× |
+| Página 1 | 178.2 ms | 8.9 ms | 19.9× | 72 000 | 1 040 | 69.2× |
+| Página profunda (10) | 163.7 ms | 9.3 ms | 17.6× | 72 000 | 1 040 | 69.2× |
+| Walk (10 páginas) | 1 718.1 ms | 93.9 ms | 18.3× | 720 000 | 10 400 | 69.2× |
 
 La línea base siempre lee toda la partición (1 800 ítems × 40 iteraciones = 72 000).
 El índice lee solo `limit + 1` por página.
@@ -104,12 +116,14 @@ El índice lee solo `limit + 1` por página.
 
 | Métrica | Baseline (1 GSI) p50 | Indexado (2 GSIs) p50 | Delta p50 |
 |---|---|---|---|
-| Escritura `put_item` | 14.8 ms | 15.2 ms | +0.4 ms |
+| Escritura `put_item` | 5.6 ms | 5.7 ms | +0.1 ms |
 
-En DynamoDB Local la diferencia no es significativa. **En AWS**, cada GSI con
-proyección ALL duplica el almacenamiento del ítem y consume capacidad de
-escritura adicional (aproximadamente 1 WCU extra por GSI proyectado por
-escritura).
+En DynamoDB Local la diferencia de latencia de escritura observada es pequeña;
+no se realizó prueba de significancia estadística ni se midió el costo
+facturado. **En AWS**, cada GSI con proyección ALL duplica el almacenamiento
+del ítem y consume capacidad de escritura adicional (aproximadamente 1 WCU
+extra por GSI proyectado por escritura). Este costo no se observó en esta
+corrida.
 
 ### Consistencia eventual
 

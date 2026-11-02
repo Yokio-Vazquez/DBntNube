@@ -23,7 +23,7 @@
 | Python | 3.13.7 |
 | CPU | 8 núcleos |
 | CI | No (corrida local) |
-| Commit | `a161f49f68bff4eb48d42a91a18e9c830d216ae2` |
+| Commit | `4f798dcd8c243c4626accb5b7fb9b1b958a1dfdf` |
 
 ## Resultados de lectura
 
@@ -31,16 +31,16 @@ Fuente: `artifacts/m08-benchmark-results.json` (modo quick).
 
 | Escenario | Baseline p50 (ms) | Indexado p50 (ms) | Ratio p50 | Baseline p95 (ms) | Indexado p95 (ms) | Ratio p95 | Baseline items | Indexado items | Ratio items | Veredicto |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Página 1 | 181.7 | 11.5 | 15.8× | 361.2 | 17.5 | 20.7× | 72 000 | 1 040 | 69.2× | mejora observada |
-| Página profunda (10) | 179.4 | 10.8 | 16.6× | 350.5 | 26.0 | 13.5× | 72 000 | 1 040 | 69.2× | mejora observada |
-| Walk (10 páginas) | 1 890.8 | 102.6 | 18.4× | 3 850.3 | 142.4 | 27.0× | 720 000 | 10 400 | 69.2× | mejora observada |
+| Página 1 | 178.2 | 8.9 | 19.9× | 352.0 | 16.3 | 21.6× | 72 000 | 1 040 | 69.2× | mejora observada |
+| Página profunda (10) | 163.7 | 9.3 | 17.6× | 277.7 | 14.5 | 19.1× | 72 000 | 1 040 | 69.2× | mejora observada |
+| Walk (10 páginas) | 1 718.1 | 93.9 | 18.3× | 2 727.3 | 229.2 | 11.9× | 720 000 | 10 400 | 69.2× | mejora observada |
 
 ### Interpretación
 
 La línea base siempre lee **toda la partición** del juego caliente (1 800 ítems)
 en cada consulta, sin importar qué página se solicite. El índice lee
 `limit + 1 = 26` ítems por página, lo que reduce las lecturas 69× y la
-latencia entre 14× y 27× dependiendo del escenario.
+latencia observada entre 12× y 22× dependiendo del escenario en esta corrida.
 
 El veredicto lo calcula el script automáticamente: "mejora observada" cuando
 el p95 y los items leídos del indexado son menores que los del baseline.
@@ -49,13 +49,14 @@ el p95 y los items leídos del indexado son menores que los del baseline.
 
 | Métrica | Baseline (1 GSI) | Indexado (2 GSIs) | Delta |
 |---|---|---|---|
-| p50 (ms) | 14.8 | 15.2 | +0.4 ms |
-| p95 (ms) | 21.7 | 25.9 | +4.3 ms |
+| p50 (ms) | 5.6 | 5.7 | +0.1 ms |
+| p95 (ms) | 9.0 | 10.0 | +0.9 ms |
 | Muestras | 100 | 100 | — |
 
-En DynamoDB Local la diferencia de latencia de escritura es marginal. En AWS,
-cada GSI con proyección ALL implica capacidad de escritura adicional (~1 WCU
-extra por GSI por escritura) y duplica el almacenamiento del ítem proyectado.
+En DynamoDB Local la diferencia de latencia de escritura observada es pequeña,
+pero no se realizó una prueba de significancia estadística. En AWS, cada GSI
+con proyección ALL implica capacidad de escritura adicional (~1 WCU extra por
+GSI proyectado por escritura) y duplica el almacenamiento del ítem proyectado.
 El costo facturado no se observa en esta corrida (`billingCostObserved: false`).
 
 ## Comparación de tablas
@@ -88,11 +89,33 @@ la comparación de **escritura**.
    el Lab no estaba habilitado al momento de la corrida. Los números de
    este reporte son exclusivamente de DynamoDB Local.
 
+6. **Sin prueba de significancia.** Las diferencias de latencia reportadas
+   no se sometieron a prueba estadística (e.g. Mann-Whitney U). El gate
+   de CI se basa en `itemsRead`, que es determinista.
+
+7. **Duración del modo quick.** El plan interno proponía una meta de 90 s
+   para el modo quick. En esta máquina la corrida tomó ~128 s. La
+   diferencia se atribuye al entrelazado con warm-up sobre DynamoDB Local
+   en Windows. El gate de CI no impone un límite de tiempo al benchmark;
+   el timeout del workflow (20 min) es el único tope.
+
 ## Conclusión
 
-El GSI `game-occurred-at-index` con paginación por cursor reduce
-drásticamente las lecturas (de O(N) a O(limit)) y elimina la inestabilidad
-del offset ante inserciones concurrentes. El trade-off es un atributo
-interno adicional, almacenamiento duplicado en el GSI y consistencia
-eventual. Para el caso de uso del curso (consultar eventos de un juego
-ordenados cronológicamente), el beneficio supera ampliamente el costo.
+El GSI `game-occurred-at-index` con paginación por cursor reduce las
+lecturas de O(N) a O(limit) — en esta corrida, de 72 000 a 1 040 ítems
+leídos por página (69.2×) — y elimina la inestabilidad del offset ante
+inserciones concurrentes.
+
+El trade-off es un atributo interno adicional, almacenamiento duplicado
+en el GSI y consistencia eventual. El costo facturado en AWS (WCU, RCU,
+almacenamiento) no se midió en esta corrida y requiere validación
+adicional antes de adoptarse en producción.
+
+## Ajustes respecto al plan
+
+- **`artifacts/m08-benchmark-full.json`**: el plan preveía una corrida
+  full (5× más iteraciones). No se generó en esta entrega porque la
+  corrida completa toma ~10 min y no era un requisito del profesor.
+  El artifact quick es suficiente para demostrar la corrección y el gate.
+- **Duración quick ~128 s vs meta interna de 90 s**: la diferencia se
+  documenta en la sección "Amenazas a la validez" punto 7.

@@ -87,7 +87,7 @@
   "benchmark": {
     "script": "scripts/m08_benchmark.py",
     "quickArtifact": "artifacts/m08-benchmark-results.json",
-    "fullArtifact": "artifacts/m08-benchmark-full.json",
+    "fullArtifact": "no generado en esta entrega; ver planDeviations",
     "mode": "quick",
     "seed": 20261031,
     "iterations": 40,
@@ -151,6 +151,23 @@
     "Los resultados de latencia son de una sola máquina local con variabilidad de SO",
     "El dataset tiene 3000 eventos; en producción los volúmenes serían mayores",
     "No se observó el costo facturado (WCU/RCU) del GSI adicional",
-    "La consistencia eventual del GSI puede hacer que documentos recién insertados no aparezcan inmediatamente"
+    "La consistencia eventual del GSI puede hacer que documentos recién insertados no aparezcan inmediatamente",
+    "No se realizó prueba de significancia estadística sobre las diferencias de latencia de escritura",
+    "No se generó artifacts/m08-benchmark-full.json (ver planDeviations)"
+  ],
+  "planDeviations": [
+    {
+      "item": "artifacts/m08-benchmark-full.json",
+      "expected": "Corrida full (5× más iteraciones) versionada en artifacts/",
+      "actual": "No se generó en esta entrega",
+      "reason": "La corrida full toma ~10 min y no era un requisito explícito del profesor. El artifact quick demuestra corrección y gate.",
+      "command": "make bench"
+    },
+    {
+      "item": "Duración del modo quick",
+      "expected": "Meta interna del plan: < 90 segundos",
+      "actual": "~128 segundos en esta máquina (Windows, DynamoDB Local)",
+      "reason": "El entrelazado con warm-up de 6 escenarios × 45 iteraciones totales sobre DynamoDB Local en Windows excede la meta. El gate de CI no impone límite de tiempo; el timeout del workflow (20 min) es el único tope."
+    }
   ]
 }
