@@ -4,11 +4,11 @@
   "fixture": "fixtures\\recovery_fixture.json",
   "disaster": {
     "records_deleted": 5,
-    "duration_seconds": 0.0442
+    "duration_seconds": 0.0423
   },
   "recovery": {
     "records_restored": 5,
-    "duration_seconds": 0.0069
+    "duration_seconds": 0.007
   },
   "verification": {
     "status": "success",
