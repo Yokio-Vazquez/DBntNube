@@ -283,3 +283,104 @@ if any(item.get("source") != "synthetic-fixture" for item in fixture_m07["items"
     fail("m07_mixed_versions.json must only contain synthetic data")
 
 print("M07 validation passed")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 11. Validar archivos, evidencia y artifacts M08
+# ─────────────────────────────────────────────────────────────────────────────
+REQUIRED_M08 = [
+    "docs/ADR-008-paginacion-indices-rendimiento.md",
+    "docs/M08-reporte-rendimiento.md",
+    "evidence/m08-pagination-performance.json",
+    "artifacts/m08-benchmark-results.json",
+    "scripts/m08_benchmark.py",
+    "src/pagination.py",
+    "tests/test_m08_pagination.py",
+    "tests/test_m08_pagination_unit.py",
+    "tests/test_m08_benchmark_unit.py",
+    "docs/M08-persona1-implementacion.md",
+    "docs/M08-persona2-correcciones.md",
+]
+for f in REQUIRED_M08:
+    if not Path(f).is_file():
+        fail(f"missing M08 required file: {f}")
+
+# --- Evidencia M08 ---
+evidence_m08 = json.loads(Path("evidence/m08-pagination-performance.json").read_text(encoding="utf-8"))
+required_m08_ev = {
+    "assignmentId", "commitSha", "team", "paginationTests", "benchmark",
+    "baselineComparison", "tradeOffs", "environment", "commands", "results",
+    "assumptions", "limitations",
+}
+missing_m08_ev = sorted(required_m08_ev.difference(evidence_m08))
+if missing_m08_ev:
+    fail(f"missing M08 evidence fields: {', '.join(missing_m08_ev)}")
+if evidence_m08["assignmentId"] != "m08-pagination-performance":
+    fail("unexpected M08 assignmentId")
+if not SHA_RE.match(str(evidence_m08["commitSha"])):
+    fail("M08 commitSha must be a full 40-character git SHA")
+team_m08 = evidence_m08["team"]
+if sorted(member.get("persona") for member in team_m08) != [1, 2, 3]:
+    fail("M08 evidence must document Personas 1, 2 and 3")
+for member in team_m08:
+    if not member.get("role") or not member.get("commitShas") or not member.get("files"):
+        fail(f"M08 persona {member.get('persona')} needs role, files and commitShas")
+    if not all(SHA_RE.match(sha) for sha in member["commitShas"]):
+        fail(f"M08 persona {member.get('persona')} has an invalid commit SHA")
+if not evidence_m08["limitations"]:
+    fail("M08 evidence must declare limitations")
+
+# --- Artifact M08 quick ---
+artifact_m08 = json.loads(Path("artifacts/m08-benchmark-results.json").read_text(encoding="utf-8"))
+if artifact_m08.get("assignmentId") != "m08-pagination-performance":
+    fail("unexpected M08 artifact assignmentId")
+if artifact_m08.get("table") in {"cdrl_events", os.getenv("DYNAMODB_TABLE", "cdrl_events")}:
+    fail("M08 artifact must come from an isolated table, not cdrl_events")
+if not artifact_m08.get("environment"):
+    fail("M08 artifact must include environment")
+if not artifact_m08.get("dataset", {}).get("seed"):
+    fail("M08 artifact must include dataset.seed")
+
+# Validate readComparison: both strategies use the same table.
+read_comp = artifact_m08.get("readComparison", {})
+if read_comp.get("baselineTable") != read_comp.get("indexedTable") or read_comp.get("samePhysicalTable") is not True:
+    fail("M08 readComparison: both strategies must use the same physical table")
+
+# Validate scenarios.
+expected_scenarios = {
+    f"{strategy}_{kind}"
+    for strategy in ("baseline", "indexed")
+    for kind in ("page1", "deep", "walk")
+}
+if set(artifact_m08.get("scenarios", {})) != expected_scenarios:
+    fail(f"M08 artifact must contain exactly {expected_scenarios}")
+iterations = artifact_m08.get("config", {}).get("iterations")
+for name, scenario in artifact_m08.get("scenarios", {}).items():
+    if iterations and scenario.get("samples") != iterations:
+        fail(f"M08 scenario {name}: samples ({scenario.get('samples')}) != iterations ({iterations})")
+    if scenario.get("errors", -1) != 0:
+        fail(f"M08 scenario {name}: errors must be 0")
+    latency = scenario.get("latencyMs", {})
+    if latency.get("p50", 0) > latency.get("p95", -1):
+        fail(f"M08 scenario {name}: p50 > p95")
+
+# Validate comparison is not empty.
+comparison = artifact_m08.get("comparison", {})
+if not comparison:
+    fail("M08 artifact comparison must not be empty")
+
+# Validate correctness.
+correctness = artifact_m08.get("correctness", {})
+if correctness.get("sameResultSet") is not True:
+    fail("M08 correctness.sameResultSet must be true")
+
+# Validate gate.
+gate = artifact_m08.get("gate", {})
+if gate.get("passed") is not True:
+    fail("M08 gate must pass")
+scenarios = artifact_m08.get("scenarios", {})
+if scenarios.get("indexed_deep", {}).get("itemsRead", float("inf")) >= scenarios.get("baseline_deep", {}).get(
+    "itemsRead", 0
+):
+    fail("M08 gate: indexed_deep.itemsRead must be less than baseline_deep.itemsRead")
+
+print("M08 validation passed")

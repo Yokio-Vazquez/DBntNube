@@ -39,6 +39,7 @@ verify:
 	@echo "=> Ejecutando verificación completa..."
 	@$(PYTHON) scripts/disaster_recovery.py
 	@$(PYTHON) scripts/m07_demo.py
+	@$(PYTHON) scripts/m08_benchmark.py --quick
 	@$(PYTHON) scripts/verify_base.py
 	@$(PYTHON) -c "import pathlib; pathlib.Path('artifacts/test_report.xml').unlink(missing_ok=True)"
 	@$(PYTHON) -m pytest tests/ -v --junitxml=artifacts/test_report.xml

@@ -13,8 +13,8 @@ make run      # 3. Ruta crítica
 Requisitos: Docker (con `docker compose`), Python 3.11+ y GNU Make. No hace falta ningún paso manual: no tienes que crear `.env`, instalar dependencias ni arrancar la API a mano.
 
 1. `make setup` copia `.env.example` a `.env` si no existe, crea el entorno virtual `.venv`, instala `requirements.txt`, levanta PostgreSQL y DynamoDB Local (`docker compose up -d --wait`), crea la tabla `cdrl_events` con eventos sintéticos, aplica roles y ejecuta las migraciones de Alembic.
-2. `make verify` corre el disaster recovery (M06), la demo de evolución documental (M07) y el contrato del repositorio, y después la suite completa de pytest. El reporte JUnit queda en `artifacts/test_report.xml`.
-3. `make run` ejecuta la ruta crítica y **termina solo**: verifica PostgreSQL y DynamoDB, levanta la API en `http://127.0.0.1:8080`, prueba `/health`, `/metrics/summary` y `/events`, la detiene y ejecuta el ciclo `migrate → migrate (idempotente) → rollback` sobre `cdrl_events`, dejando la tabla en su estado original. La evidencia queda en `artifacts/run-evidence.json`.
+2. `make verify` corre el disaster recovery (M06), la demo de evolución documental (M07), el benchmark de paginación M08 (modo quick), el contrato del repositorio y la suite completa de pytest. El reporte JUnit queda en `artifacts/test_report.xml`.
+3. `make run` ejecuta la ruta crítica y **termina solo**: verifica PostgreSQL y DynamoDB, levanta la API en `http://127.0.0.1:8080`, prueba `/health`, `/metrics/summary`, `/events` y `/events/page`, la detiene y ejecuta el ciclo `migrate → migrate (idempotente) → rollback` sobre `cdrl_events`, dejando la tabla en su estado original. La evidencia queda en `artifacts/run-evidence.json`.
 4. Conserva la evidencia técnica de cada hito y la contribución de cada integrante.
 
 Si quieres explorar la API de forma interactiva, ejecuta `make serve`: deja uvicorn escuchando en `http://127.0.0.1:8080` (documentación en `/docs`) hasta que pulses `Ctrl+C`. Usa el puerto 8080 porque DynamoDB Local ocupa el 8000.
@@ -23,11 +23,12 @@ El lenguaje de la aplicación lo selecciona el equipo y debe documentarse en un 
 
 ```text
 make setup          # .venv + dependencias + Docker + DynamoDB + roles + migraciones
-make verify         # Contrato + disaster recovery + demo M07 + suite pytest
+make verify         # Contrato + disaster recovery + demo M07 + benchmark M08 + suite pytest
 make run            # Ruta crítica: BD, API (arranca, se prueba y se detiene), ciclo M07
 make serve          # (Opcional) API interactiva en :8080, bloquea la terminal
 make migrate        # Migrar documentos v1/v2 a v3 en cdrl_events
 make rollback       # Revertir migración a versiones originales
+make bench          # Benchmark completo M08 (modo full) → artifacts/m08-benchmark-full.json
 ```
 
 ## Entornos
@@ -43,3 +44,42 @@ En Classroom entrega el repositorio propio del equipo, el tag semanal solicitado
 ## Preparación e implementación M07
 
 La [guía corregida](docs/M07-guia-equipo.md) define el trabajo del equipo. La [implementación de Persona 1](docs/M07-persona1-implementacion.md) documenta el API compatible, la configuración de escritura, las funciones compartidas y la validación realizada. La decisión arquitectónica se documenta en [ADR-007](docs/ADR-007-evolucion-documentos.md).
+
+## M08 — Paginación, índices y rendimiento
+
+### Endpoint nuevo: `GET /events/page`
+
+```text
+GET /events/page?game_id=1&limit=25&cursor=<opaco>&version=3
+→ 200 { "items": [...], "nextCursor": "..." | null, "limit": 25, "order": "occurred_at_desc" }
+→ 400 cursor inválido o de otro game_id
+→ 422 limit fuera de rango, game_id <= 0 o version fuera de 1..3
+→ 503 DynamoDB no disponible
+```
+
+El cursor es opaco (base64url de un JSON versionado). Para recorrer todas las páginas, usar el `nextCursor` de cada respuesta hasta obtener `null`. El endpoint `GET /events` sigue funcionando sin cambios para compatibilidad con M04–M07.
+
+### Variables de configuración
+
+| Variable | Default | Descripción |
+|---|---|---|
+| `EVENTS_PAGE_DEFAULT_LIMIT` | 25 | Tamaño de página por defecto |
+| `EVENTS_PAGE_MAX_LIMIT` | 100 | Tamaño máximo permitido |
+| `DYNAMODB_TABLE_M08_TEST` | cdrl_events_m08_test | Tabla aislada para benchmark |
+| `M08_BENCH_SEED` | 20261031 | Semilla del generador |
+
+### Benchmark
+
+```bash
+python scripts/m08_benchmark.py --quick   # Corrida rápida (~2 min)
+make bench                                 # Corrida completa (×5)
+```
+
+Los artifacts se guardan en `artifacts/m08-benchmark-results.json` (quick, regenerado por `make verify`) y `artifacts/m08-benchmark-full.json` (full, manual).
+
+### Documentación
+
+- [ADR-008 — Índice cronológico, paginación y rendimiento](docs/ADR-008-paginacion-indices-rendimiento.md)
+- [Reporte de rendimiento](docs/M08-reporte-rendimiento.md)
+- [Implementación Persona 1](docs/M08-persona1-implementacion.md)
+- [Correcciones Persona 2](docs/M08-persona2-correcciones.md)

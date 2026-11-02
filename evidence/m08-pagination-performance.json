@@ -1,0 +1,156 @@
+{
+  "assignmentId": "m08-pagination-performance",
+  "commitSha": "PLACEHOLDER_CODE_SHA",
+  "team": [
+    {
+      "persona": 1,
+      "name": "Yokio Yosafat Vázquez Carrillo",
+      "role": "Índice cronológico, cursor opaco y API GET /events/page",
+      "commitShas": [
+        "c0b358c82aaa23945223562d0c2d85e0790f8018",
+        "a161f49f68bff4eb48d42a91a18e9c830d216ae2"
+      ],
+      "files": [
+        "src/nosql.py",
+        "src/pagination.py",
+        "src/main.py",
+        "scripts/run_critical_path.py",
+        "scripts/m07_demo.py",
+        "tests/test_m08_pagination_unit.py",
+        "docs/M08-persona1-implementacion.md",
+        ".env.example"
+      ]
+    },
+    {
+      "persona": 2,
+      "name": "Diego de Jesús Huerta Barroso",
+      "role": "Generador de carga sintética, benchmark reproducible y mediciones",
+      "commitShas": [
+        "6758eb1a09ce0ea101d554fc71364d324d10df2d"
+      ],
+      "files": [
+        "scripts/m08_benchmark.py",
+        "tests/test_m08_benchmark_unit.py",
+        "Makefile",
+        ".gitignore",
+        ".env.example"
+      ]
+    },
+    {
+      "persona": 3,
+      "name": "Salomón Álvarez Gómez",
+      "role": "Pruebas de integración, ADR-008, reporte, evidencia, verify_base M08 y entrega",
+      "commitShas": [
+        "PLACEHOLDER_P3_SHA"
+      ],
+      "files": [
+        "tests/test_m08_pagination.py",
+        "docs/ADR-008-paginacion-indices-rendimiento.md",
+        "docs/M08-reporte-rendimiento.md",
+        "evidence/m08-pagination-performance.json",
+        "scripts/verify_base.py",
+        "Makefile",
+        "README.md"
+      ]
+    }
+  ],
+  "paginationTests": {
+    "integration": "tests/test_m08_pagination.py",
+    "unit": "tests/test_m08_pagination_unit.py",
+    "cases": {
+      "normal": [
+        "test_normal_60_events_pages_25_25_10",
+        "test_normal_api_walk_hides_storage_key"
+      ],
+      "boundary": [
+        "test_boundary_insertions_during_walk_are_stable_vs_offset",
+        "test_boundary_tied_timestamps_across_page_cut",
+        "test_boundary_empty_game",
+        "test_boundary_exact_multiple_of_limit_has_no_empty_page",
+        "test_boundary_min_limit_one",
+        "test_boundary_max_limit_api"
+      ],
+      "failure": [
+        "test_failure_invalid_or_foreign_cursor_returns_400",
+        "test_failure_invalid_parameters_return_422",
+        "test_failure_dynamodb_unreachable_returns_503"
+      ],
+      "compatibility": [
+        "test_compat_events_endpoint_unchanged",
+        "test_compat_query_events_follows_1mb_continuation"
+      ],
+      "benchmark": [
+        "test_benchmark_quick_artifact_structure_and_reproducibility"
+      ]
+    }
+  },
+  "benchmark": {
+    "script": "scripts/m08_benchmark.py",
+    "quickArtifact": "artifacts/m08-benchmark-results.json",
+    "fullArtifact": "artifacts/m08-benchmark-full.json",
+    "mode": "quick",
+    "seed": 20261031,
+    "iterations": 40,
+    "warmup": 5,
+    "events": 3000,
+    "games": 5,
+    "hotGameShare": 0.6,
+    "pageSize": 25,
+    "deepPage": 10,
+    "percentileMethod": "nearest-rank"
+  },
+  "baselineComparison": {
+    "strategy": "Query PK completo + sort en Python + offset vs Query GSI + cursor",
+    "samePhysicalTable": true,
+    "readComparison": "Ambas estrategias de lectura usan la misma tabla con ambos GSIs",
+    "writeComparison": "La tabla sin el GSI nuevo se reserva para medir costo de escritura",
+    "correctnessCheck": "Páginas 1 y deep deben devolver los mismos event_key en el mismo orden",
+    "gate": "indexed_deep.itemsRead < baseline_deep.itemsRead (determinista)"
+  },
+  "tradeOffs": {
+    "writeCost": "Cada GSI con proyección ALL implica ~1 WCU extra por escritura en AWS",
+    "storage": "Proyección ALL duplica cada atributo en el almacenamiento del GSI",
+    "consistency": "El GSI es eventualmente consistente; no admite ConsistentRead",
+    "cursorOpacity": "El cursor no está firmado; es opaco pero no secreto",
+    "noSnapshot": "No hay aislamiento transaccional entre páginas"
+  },
+  "environment": {
+    "target": "dynamodb-local",
+    "dynamodbLocalImage": "amazon/dynamodb-local:2.5.2",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "pythonVersion": "3.13.7",
+    "cpuCount": 8,
+    "ci": false,
+    "learnerLab": "No ejecutado: AWS Academy Learner Lab no estaba habilitado al momento de la corrida"
+  },
+  "commands": {
+    "setup": "make setup",
+    "verify": "make verify",
+    "run": "make run",
+    "benchQuick": "python scripts/m08_benchmark.py --quick",
+    "benchFull": "make bench",
+    "integrationTests": "python -m pytest tests/test_m08_pagination.py -v",
+    "unitTests": "python -m pytest tests/test_m08_pagination_unit.py tests/test_m08_benchmark_unit.py -v"
+  },
+  "results": {
+    "unitTests": "121 passed (37 pagination + 24 benchmark + 60 M06/M07)",
+    "integrationTests": "19 passed (DynamoDB Local real, tablas aisladas)",
+    "benchmarkQuick": "correctness=true, gate=passed, 6 scenarios × 40 iterations, 0 errors",
+    "quickDuration": "~128 seconds",
+    "makeVerify": "pendiente de ejecución final con todo integrado"
+  },
+  "assumptions": [
+    "DynamoDB Local es suficiente para demostrar la corrección de la paginación y la diferencia de items leídos",
+    "El emulador local no refleja latencias ni costos facturados de AWS",
+    "El dataset sintético determinista es suficientemente grande para demostrar la reducción de lecturas",
+    "El gate de CI usa itemsRead (determinista) porque la latencia es ruidosa"
+  ],
+  "limitations": [
+    "DynamoDB Local no es representativo de latencias AWS reales",
+    "AWS Academy Learner Lab no estaba habilitado; no se midió en AWS",
+    "Los resultados de latencia son de una sola máquina local con variabilidad de SO",
+    "El dataset tiene 3000 eventos; en producción los volúmenes serían mayores",
+    "No se observó el costo facturado (WCU/RCU) del GSI adicional",
+    "La consistencia eventual del GSI puede hacer que documentos recién insertados no aparezcan inmediatamente"
+  ]
+}
