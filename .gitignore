@@ -10,6 +10,9 @@ artifacts/*.log
 !artifacts/m04-nosql-decision-results.json
 !artifacts/m06-resultados.json
 !artifacts/m07-migration-results.json
+!artifacts/m08-benchmark-results.json
+!artifacts/m08-benchmark-full.json
+!artifacts/m08-benchmark-aws.json
 evidence/*-local.json
 db/data/
 docker-data/

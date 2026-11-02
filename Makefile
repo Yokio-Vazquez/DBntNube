@@ -1,4 +1,4 @@
-.PHONY: setup verify run serve security migrate rollback
+.PHONY: setup verify run serve security migrate rollback bench
 
 # Flujo oficial (100% automático, sin pasos manuales):
 #   make setup   -> entorno virtual + dependencias + Docker + migraciones + roles
@@ -66,3 +66,6 @@ migrate:
 
 rollback:
 	@$(PYTHON) scripts/migrate_events.py --rollback
+
+bench:
+	@$(PYTHON) scripts/m08_benchmark.py --full --output artifacts/m08-benchmark-full.json
