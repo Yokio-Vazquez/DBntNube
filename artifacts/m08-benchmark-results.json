@@ -1,22 +1,22 @@
 {
   "assignmentId": "m08-pagination-performance",
-  "table": "cdrl_events_m08_test_5e1d57adc9d3_indexed",
+  "table": "cdrl_events_m08_test_a5ae472da2a5_indexed",
   "tables": {
-    "baseline": "cdrl_events_m08_test_5e1d57adc9d3_baseline",
-    "indexed": "cdrl_events_m08_test_5e1d57adc9d3_indexed"
+    "baseline": "cdrl_events_m08_test_a5ae472da2a5_baseline",
+    "indexed": "cdrl_events_m08_test_a5ae472da2a5_indexed"
   },
   "readComparison": {
-    "baselineTable": "cdrl_events_m08_test_5e1d57adc9d3_indexed",
-    "indexedTable": "cdrl_events_m08_test_5e1d57adc9d3_indexed",
+    "baselineTable": "cdrl_events_m08_test_a5ae472da2a5_indexed",
+    "indexedTable": "cdrl_events_m08_test_a5ae472da2a5_indexed",
     "samePhysicalTable": true
   },
   "writeComparison": {
-    "baselineTable": "cdrl_events_m08_test_5e1d57adc9d3_baseline",
-    "indexedTable": "cdrl_events_m08_test_5e1d57adc9d3_indexed"
+    "baselineTable": "cdrl_events_m08_test_a5ae472da2a5_baseline",
+    "indexedTable": "cdrl_events_m08_test_a5ae472da2a5_indexed"
   },
   "mode": "quick",
-  "generatedAt": "2026-11-02T04:30:45.870510+00:00",
-  "commitSha": "4f798dcd8c243c4626accb5b7fb9b1b958a1dfdf",
+  "generatedAt": "2026-11-02T05:03:04.359825+00:00",
+  "commitSha": "cc2078c4d5cc6ce206be5cf59b98b65c8c31e3cf",
   "dataset": {
     "seed": 20261031,
     "events": 3000,
@@ -44,8 +44,8 @@
     "pythonVersion": "3.13.7",
     "cpuCount": 8,
     "ci": null,
-    "commitSha": "4f798dcd8c243c4626accb5b7fb9b1b958a1dfdf",
-    "generatedAt": "2026-11-02T04:30:45.870510+00:00"
+    "commitSha": "cc2078c4d5cc6ce206be5cf59b98b65c8c31e3cf",
+    "generatedAt": "2026-11-02T05:03:04.359825+00:00"
   },
   "correctness": {
     "sameResultSet": true,
@@ -59,11 +59,11 @@
       "samples": 40,
       "errors": 0,
       "latencyMs": {
-        "p50": 178.2448,
-        "p95": 351.9887,
-        "mean": 204.64006,
-        "min": 106.7244,
-        "max": 585.6723
+        "p50": 90.8788,
+        "p95": 115.7343,
+        "mean": 95.94939,
+        "min": 85.2342,
+        "max": 150.4995
       },
       "itemsRead": 72000,
       "itemsReturned": 1000
@@ -72,11 +72,11 @@
       "samples": 40,
       "errors": 0,
       "latencyMs": {
-        "p50": 8.9379,
-        "p95": 16.3096,
-        "mean": 10.316625,
-        "min": 5.8378,
-        "max": 25.8754
+        "p50": 5.3212,
+        "p95": 6.4719,
+        "mean": 5.4365325,
+        "min": 4.4125,
+        "max": 7.3181
       },
       "itemsRead": 1040,
       "itemsReturned": 1000
@@ -85,11 +85,11 @@
       "samples": 40,
       "errors": 0,
       "latencyMs": {
-        "p50": 163.7484,
-        "p95": 277.6838,
-        "mean": 173.8901175,
-        "min": 102.4655,
-        "max": 307.7566
+        "p50": 93.3982,
+        "p95": 120.9063,
+        "mean": 99.00184,
+        "min": 86.9659,
+        "max": 127.2883
       },
       "itemsRead": 72000,
       "itemsReturned": 1000
@@ -98,11 +98,11 @@
       "samples": 40,
       "errors": 0,
       "latencyMs": {
-        "p50": 9.2915,
-        "p95": 14.5049,
-        "mean": 11.0936125,
-        "min": 6.3521,
-        "max": 66.3068
+        "p50": 5.5792,
+        "p95": 6.8448,
+        "mean": 5.7117175,
+        "min": 4.8644,
+        "max": 7.4578
       },
       "itemsRead": 1040,
       "itemsReturned": 1000
@@ -111,11 +111,11 @@
       "samples": 40,
       "errors": 0,
       "latencyMs": {
-        "p50": 1718.0602,
-        "p95": 2727.3146,
-        "mean": 1785.55256,
-        "min": 1015.5123,
-        "max": 3068.8486
+        "p50": 942.3323,
+        "p95": 1112.1848,
+        "mean": 964.60199,
+        "min": 889.5257,
+        "max": 1169.1331
       },
       "itemsRead": 720000,
       "itemsReturned": 10000
@@ -124,11 +124,11 @@
       "samples": 40,
       "errors": 0,
       "latencyMs": {
-        "p50": 93.9342,
-        "p95": 229.1776,
-        "mean": 107.197625,
-        "min": 62.0052,
-        "max": 361.2725
+        "p50": 51.5176,
+        "p95": 64.9981,
+        "mean": 52.9409775,
+        "min": 46.5352,
+        "max": 71.9332
       },
       "itemsRead": 10400,
       "itemsReturned": 10000
@@ -136,20 +136,20 @@
   },
   "comparison": {
     "page1": {
-      "p50Ratio": 19.9426,
-      "p95Ratio": 21.5817,
+      "p50Ratio": 17.0786,
+      "p95Ratio": 17.8826,
       "itemsReadRatio": 69.2308,
       "verdict": "mejora observada"
     },
     "deep": {
-      "p50Ratio": 17.6235,
-      "p95Ratio": 19.1441,
+      "p50Ratio": 16.7404,
+      "p95Ratio": 17.664,
       "itemsReadRatio": 69.2308,
       "verdict": "mejora observada"
     },
     "walk": {
-      "p50Ratio": 18.29,
-      "p95Ratio": 11.9004,
+      "p50Ratio": 18.2915,
+      "p95Ratio": 17.111,
       "itemsReadRatio": 69.2308,
       "verdict": "mejora observada"
     }
@@ -159,24 +159,24 @@
     "samples": 100,
     "baseline": {
       "latencyMs": {
-        "p50": 5.5603,
-        "p95": 9.0439,
-        "mean": 6.264537,
-        "min": 4.2099,
-        "max": 31.1886
+        "p50": 3.9822,
+        "p95": 5.3057,
+        "mean": 4.078863,
+        "min": 3.1219,
+        "max": 6.4201
       }
     },
     "indexed": {
       "latencyMs": {
-        "p50": 5.6791,
-        "p95": 9.9908,
-        "mean": 6.220794,
-        "min": 4.4074,
-        "max": 12.1588
+        "p50": 4.0111,
+        "p95": 5.9006,
+        "mean": 4.191222,
+        "min": 3.1892,
+        "max": 6.4832
       }
     },
-    "p50DeltaMs": 0.11880000000000024,
-    "p95DeltaMs": 0.9468999999999994,
+    "p50DeltaMs": 0.028899999999999704,
+    "p95DeltaMs": 0.5949,
     "billingCostObserved": false,
     "interpretation": "La latencia de escritura se midió; el costo facturado y las WCU no se observan en esta corrida. En AWS, cada GSI proyectado agrega almacenamiento e implica capacidad de escritura adicional."
   },
