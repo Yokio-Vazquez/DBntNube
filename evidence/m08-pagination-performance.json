@@ -1,6 +1,6 @@
 {
   "assignmentId": "m08-pagination-performance",
-  "commitSha": "PLACEHOLDER_CODE_SHA",
+  "commitSha": "7bb298f7b50093b77e95caad03ae043c688f7168",
   "team": [
     {
       "persona": 1,
@@ -41,7 +41,7 @@
       "name": "Salomón Álvarez Gómez",
       "role": "Pruebas de integración, ADR-008, reporte, evidencia, verify_base M08 y entrega",
       "commitShas": [
-        "PLACEHOLDER_P3_SHA"
+        "7bb298f7b50093b77e95caad03ae043c688f7168"
       ],
       "files": [
         "tests/test_m08_pagination.py",
@@ -137,7 +137,7 @@
     "integrationTests": "19 passed (DynamoDB Local real, tablas aisladas)",
     "benchmarkQuick": "correctness=true, gate=passed, 6 scenarios × 40 iterations, 0 errors",
     "quickDuration": "~128 seconds",
-    "makeVerify": "pendiente de ejecución final con todo integrado"
+    "makeVerify": "passed (disaster_recovery + m07_demo + m08_benchmark quick + verify_base + pytest)"
   },
   "assumptions": [
     "DynamoDB Local es suficiente para demostrar la corrección de la paginación y la diferencia de items leídos",
