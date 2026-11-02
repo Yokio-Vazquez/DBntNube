@@ -11,6 +11,7 @@ artifacts/*.log
 !artifacts/m06-resultados.json
 !artifacts/m07-migration-results.json
 !artifacts/m08-benchmark-results.json
+!artifacts/m08-benchmark-report-baseline.json
 !artifacts/m08-benchmark-full.json
 !artifacts/m08-benchmark-aws.json
 evidence/*-local.json
