@@ -8,7 +8,7 @@
       "scanned": 6,
       "migrated": 4,
       "skipped": 1,
-      "durationSeconds": 0.0443,
+      "durationSeconds": 0.0249,
       "failed": 1,
       "failureDetails": [
         {
@@ -28,7 +28,7 @@
       "scanned": 6,
       "migrated": 0,
       "skipped": 5,
-      "durationSeconds": 0.0071,
+      "durationSeconds": 0.0044,
       "failed": 1,
       "failureDetails": [
         {
@@ -48,7 +48,7 @@
       "scanned": 6,
       "rolledBack": 4,
       "skipped": 1,
-      "durationSeconds": 0.0777,
+      "durationSeconds": 0.0246,
       "failed": 1,
       "failureDetails": [
         {
@@ -68,7 +68,7 @@
   "idempotent": true,
   "rollbackVerified": true,
   "generatedBy": "scripts/m07_demo.py",
-  "generatedAt": "2026-10-26T03:37:35Z",
+  "generatedAt": "2026-11-02T04:28:58Z",
   "cliExitCodes": [
     2,
     2,
