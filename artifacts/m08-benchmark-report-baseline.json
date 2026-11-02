@@ -1,0 +1,187 @@
+{
+  "assignmentId": "m08-pagination-performance",
+  "table": "cdrl_events_m08_test_a5ae472da2a5_indexed",
+  "tables": {
+    "baseline": "cdrl_events_m08_test_a5ae472da2a5_baseline",
+    "indexed": "cdrl_events_m08_test_a5ae472da2a5_indexed"
+  },
+  "readComparison": {
+    "baselineTable": "cdrl_events_m08_test_a5ae472da2a5_indexed",
+    "indexedTable": "cdrl_events_m08_test_a5ae472da2a5_indexed",
+    "samePhysicalTable": true
+  },
+  "writeComparison": {
+    "baselineTable": "cdrl_events_m08_test_a5ae472da2a5_baseline",
+    "indexedTable": "cdrl_events_m08_test_a5ae472da2a5_indexed"
+  },
+  "mode": "quick",
+  "generatedAt": "2026-11-02T05:03:04.359825+00:00",
+  "commitSha": "cc2078c4d5cc6ce206be5cf59b98b65c8c31e3cf",
+  "dataset": {
+    "seed": 20261031,
+    "events": 3000,
+    "games": 5,
+    "hotGameId": 1,
+    "hotGameEvents": 1800,
+    "hotGameShare": 0.6,
+    "actualHotGameShare": 0.6,
+    "tiedTimestamp": "2025-01-01T00:00:00Z",
+    "tiedTimestampEvents": 150,
+    "source": "synthetic-load"
+  },
+  "config": {
+    "iterations": 40,
+    "warmup": 5,
+    "pageSize": 25,
+    "deepPage": 10,
+    "percentileMethod": "nearest-rank",
+    "scenarioOrder": "seeded random interleaving"
+  },
+  "environment": {
+    "target": "dynamodb-local",
+    "dynamodbLocalImage": "amazon/dynamodb-local:2.5.2",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "pythonVersion": "3.13.7",
+    "cpuCount": 8,
+    "ci": null,
+    "commitSha": "cc2078c4d5cc6ce206be5cf59b98b65c8c31e3cf",
+    "generatedAt": "2026-11-02T05:03:04.359825+00:00"
+  },
+  "correctness": {
+    "sameResultSet": true,
+    "pages": {
+      "page1": true,
+      "deep": true
+    }
+  },
+  "scenarios": {
+    "baseline_page1": {
+      "samples": 40,
+      "errors": 0,
+      "latencyMs": {
+        "p50": 90.8788,
+        "p95": 115.7343,
+        "mean": 95.94939,
+        "min": 85.2342,
+        "max": 150.4995
+      },
+      "itemsRead": 72000,
+      "itemsReturned": 1000
+    },
+    "indexed_page1": {
+      "samples": 40,
+      "errors": 0,
+      "latencyMs": {
+        "p50": 5.3212,
+        "p95": 6.4719,
+        "mean": 5.4365325,
+        "min": 4.4125,
+        "max": 7.3181
+      },
+      "itemsRead": 1040,
+      "itemsReturned": 1000
+    },
+    "baseline_deep": {
+      "samples": 40,
+      "errors": 0,
+      "latencyMs": {
+        "p50": 93.3982,
+        "p95": 120.9063,
+        "mean": 99.00184,
+        "min": 86.9659,
+        "max": 127.2883
+      },
+      "itemsRead": 72000,
+      "itemsReturned": 1000
+    },
+    "indexed_deep": {
+      "samples": 40,
+      "errors": 0,
+      "latencyMs": {
+        "p50": 5.5792,
+        "p95": 6.8448,
+        "mean": 5.7117175,
+        "min": 4.8644,
+        "max": 7.4578
+      },
+      "itemsRead": 1040,
+      "itemsReturned": 1000
+    },
+    "baseline_walk": {
+      "samples": 40,
+      "errors": 0,
+      "latencyMs": {
+        "p50": 942.3323,
+        "p95": 1112.1848,
+        "mean": 964.60199,
+        "min": 889.5257,
+        "max": 1169.1331
+      },
+      "itemsRead": 720000,
+      "itemsReturned": 10000
+    },
+    "indexed_walk": {
+      "samples": 40,
+      "errors": 0,
+      "latencyMs": {
+        "p50": 51.5176,
+        "p95": 64.9981,
+        "mean": 52.9409775,
+        "min": 46.5352,
+        "max": 71.9332
+      },
+      "itemsRead": 10400,
+      "itemsReturned": 10000
+    }
+  },
+  "comparison": {
+    "page1": {
+      "p50Ratio": 17.0786,
+      "p95Ratio": 17.8826,
+      "itemsReadRatio": 69.2308,
+      "verdict": "mejora observada"
+    },
+    "deep": {
+      "p50Ratio": 16.7404,
+      "p95Ratio": 17.664,
+      "itemsReadRatio": 69.2308,
+      "verdict": "mejora observada"
+    },
+    "walk": {
+      "p50Ratio": 18.2915,
+      "p95Ratio": 17.111,
+      "itemsReadRatio": 69.2308,
+      "verdict": "mejora observada"
+    }
+  },
+  "comparisonRatioDefinition": "baseline / indexed; > 1 favors indexed",
+  "writeCost": {
+    "samples": 100,
+    "baseline": {
+      "latencyMs": {
+        "p50": 3.9822,
+        "p95": 5.3057,
+        "mean": 4.078863,
+        "min": 3.1219,
+        "max": 6.4201
+      }
+    },
+    "indexed": {
+      "latencyMs": {
+        "p50": 4.0111,
+        "p95": 5.9006,
+        "mean": 4.191222,
+        "min": 3.1892,
+        "max": 6.4832
+      }
+    },
+    "p50DeltaMs": 0.028899999999999704,
+    "p95DeltaMs": 0.5949,
+    "billingCostObserved": false,
+    "interpretation": "La latencia de escritura se midió; el costo facturado y las WCU no se observan en esta corrida. En AWS, cada GSI proyectado agrega almacenamiento e implica capacidad de escritura adicional."
+  },
+  "gate": {
+    "name": "indexed_deep.itemsRead < baseline_deep.itemsRead",
+    "passed": true
+  }
+}

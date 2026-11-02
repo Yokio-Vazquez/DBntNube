@@ -87,6 +87,7 @@
   "benchmark": {
     "script": "scripts/m08_benchmark.py",
     "quickArtifact": "artifacts/m08-benchmark-results.json",
+    "reportBaseline": "artifacts/m08-benchmark-report-baseline.json",
     "fullArtifact": "no generado en esta entrega; ver planDeviations",
     "mode": "quick",
     "seed": 20261031,

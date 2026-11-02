@@ -292,6 +292,7 @@ REQUIRED_M08 = [
     "docs/M08-reporte-rendimiento.md",
     "evidence/m08-pagination-performance.json",
     "artifacts/m08-benchmark-results.json",
+    "artifacts/m08-benchmark-report-baseline.json",
     "scripts/m08_benchmark.py",
     "src/pagination.py",
     "tests/test_m08_pagination.py",

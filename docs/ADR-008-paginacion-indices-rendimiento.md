@@ -98,16 +98,16 @@ Las garantías siguientes aplican cuando los documentos originales ya eran
 
 ## Trade-offs medidos
 
-Los números provienen de `artifacts/m08-benchmark-results.json` (modo quick,
-DynamoDB Local, commit `4f798dc`).
+Los números provienen de `artifacts/m08-benchmark-report-baseline.json` (copia
+estable del modo quick, DynamoDB Local, commit `cc2078c`).
 
 ### Lectura: cursor vs offset
 
 | Escenario | Baseline (offset) p50 | Indexado (cursor) p50 | Ratio p50 | Items leídos baseline | Items leídos indexado | Ratio items |
 |---|---|---|---|---|---|---|
-| Página 1 | 178.2 ms | 8.9 ms | 19.9× | 72 000 | 1 040 | 69.2× |
-| Página profunda (10) | 163.7 ms | 9.3 ms | 17.6× | 72 000 | 1 040 | 69.2× |
-| Walk (10 páginas) | 1 718.1 ms | 93.9 ms | 18.3× | 720 000 | 10 400 | 69.2× |
+| Página 1 | 90.9 ms | 5.3 ms | 17.1× | 72 000 | 1 040 | 69.2× |
+| Página profunda (10) | 93.4 ms | 5.6 ms | 16.7× | 72 000 | 1 040 | 69.2× |
+| Walk (10 páginas) | 942.3 ms | 51.5 ms | 18.3× | 720 000 | 10 400 | 69.2× |
 
 La línea base siempre lee toda la partición (1 800 ítems × 40 iteraciones = 72 000).
 El índice lee solo `limit + 1` por página.
@@ -116,7 +116,7 @@ El índice lee solo `limit + 1` por página.
 
 | Métrica | Baseline (1 GSI) p50 | Indexado (2 GSIs) p50 | Delta p50 |
 |---|---|---|---|
-| Escritura `put_item` | 5.6 ms | 5.7 ms | +0.1 ms |
+| Escritura `put_item` | 4.0 ms | 4.0 ms | +0.03 ms |
 
 En DynamoDB Local la diferencia de latencia de escritura observada es pequeña;
 no se realizó prueba de significancia estadística ni se midió el costo

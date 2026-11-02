@@ -23,24 +23,25 @@
 | Python | 3.13.7 |
 | CPU | 8 núcleos |
 | CI | No (corrida local) |
-| Commit | `4f798dcd8c243c4626accb5b7fb9b1b958a1dfdf` |
+| Commit | `cc2078c4d5cc6ce206be5cf59b98b65c8c31e3cf` |
 
 ## Resultados de lectura
 
-Fuente: `artifacts/m08-benchmark-results.json` (modo quick).
+Fuente: `artifacts/m08-benchmark-report-baseline.json` (copia estable del modo
+quick; `artifacts/m08-benchmark-results.json` se regenera en cada `make verify`).
 
 | Escenario | Baseline p50 (ms) | Indexado p50 (ms) | Ratio p50 | Baseline p95 (ms) | Indexado p95 (ms) | Ratio p95 | Baseline items | Indexado items | Ratio items | Veredicto |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Página 1 | 178.2 | 8.9 | 19.9× | 352.0 | 16.3 | 21.6× | 72 000 | 1 040 | 69.2× | mejora observada |
-| Página profunda (10) | 163.7 | 9.3 | 17.6× | 277.7 | 14.5 | 19.1× | 72 000 | 1 040 | 69.2× | mejora observada |
-| Walk (10 páginas) | 1 718.1 | 93.9 | 18.3× | 2 727.3 | 229.2 | 11.9× | 720 000 | 10 400 | 69.2× | mejora observada |
+| Página 1 | 90.9 | 5.3 | 17.1× | 115.7 | 6.5 | 17.9× | 72 000 | 1 040 | 69.2× | mejora observada |
+| Página profunda (10) | 93.4 | 5.6 | 16.7× | 120.9 | 6.8 | 17.7× | 72 000 | 1 040 | 69.2× | mejora observada |
+| Walk (10 páginas) | 942.3 | 51.5 | 18.3× | 1 112.2 | 65.0 | 17.1× | 720 000 | 10 400 | 69.2× | mejora observada |
 
 ### Interpretación
 
 La línea base siempre lee **toda la partición** del juego caliente (1 800 ítems)
 en cada consulta, sin importar qué página se solicite. El índice lee
 `limit + 1 = 26` ítems por página, lo que reduce las lecturas 69× y la
-latencia observada entre 12× y 22× dependiendo del escenario en esta corrida.
+latencia observada entre 17× y 18× dependiendo del escenario en esta corrida.
 
 El veredicto lo calcula el script automáticamente: "mejora observada" cuando
 el p95 y los items leídos del indexado son menores que los del baseline.
@@ -49,8 +50,8 @@ el p95 y los items leídos del indexado son menores que los del baseline.
 
 | Métrica | Baseline (1 GSI) | Indexado (2 GSIs) | Delta |
 |---|---|---|---|
-| p50 (ms) | 5.6 | 5.7 | +0.1 ms |
-| p95 (ms) | 9.0 | 10.0 | +0.9 ms |
+| p50 (ms) | 4.0 | 4.0 | +0.03 ms |
+| p95 (ms) | 5.3 | 5.9 | +0.6 ms |
 | Muestras | 100 | 100 | — |
 
 En DynamoDB Local la diferencia de latencia de escritura observada es pequeña,
