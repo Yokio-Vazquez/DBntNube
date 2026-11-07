@@ -13,6 +13,7 @@ Devuelve 0 solo si todos los pasos pasan.
 """
 import json
 import os
+import secrets
 import subprocess
 import sys
 import time
@@ -84,9 +85,15 @@ def check_dynamodb() -> bool:
     return record("dynamodb", count > 0, table=TABLE_NAME, events=count)
 
 
+RUN_READER_TOKEN = secrets.token_urlsafe(32)
+
+
 def _get(path: str) -> tuple[int, object]:
     try:
-        with urllib.request.urlopen(f"{API_URL}{path}", timeout=5) as response:
+        request = urllib.request.Request(f"{API_URL}{path}")
+        if path.startswith("/events"):
+            request.add_header("Authorization", f"Bearer {RUN_READER_TOKEN}")
+        with urllib.request.urlopen(request, timeout=5) as response:
             return response.status, json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as error:
         return error.code, error.read().decode("utf-8", "replace")
@@ -98,6 +105,7 @@ def check_api() -> bool:
         [sys.executable, "-m", "uvicorn", "src.main:app",
          "--host", API_HOST, "--port", str(API_PORT), "--log-level", "warning"],
         cwd=ROOT,
+        env={**os.environ, "EVENTS_READER_TOKEN": RUN_READER_TOKEN},
     )
     results = []
     try:

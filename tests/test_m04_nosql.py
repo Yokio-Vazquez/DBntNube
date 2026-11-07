@@ -1,5 +1,5 @@
 import pytest
-from fastapi.testclient import TestClient
+from event_test_client import ReaderClient as TestClient
 from botocore.exceptions import BotoCoreError
 
 from src.main import app

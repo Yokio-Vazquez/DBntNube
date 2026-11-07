@@ -1,4 +1,4 @@
-from fastapi.testclient import TestClient
+from event_test_client import ReaderClient as TestClient
 
 from src.main import app
 from src.schemas import EventDocument

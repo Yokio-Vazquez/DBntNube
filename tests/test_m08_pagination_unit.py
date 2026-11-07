@@ -5,7 +5,7 @@ from decimal import Decimal
 
 import pytest
 from botocore.exceptions import EndpointConnectionError
-from fastapi.testclient import TestClient
+from event_test_client import ReaderClient as TestClient
 
 import src.main as api
 import src.nosql as nosql

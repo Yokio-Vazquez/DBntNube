@@ -34,7 +34,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
-from fastapi.testclient import TestClient
+from event_test_client import ReaderClient as TestClient
 
 import scripts.m08_benchmark as bench
 import src.main as api

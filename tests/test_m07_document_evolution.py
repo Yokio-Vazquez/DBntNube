@@ -22,7 +22,7 @@ import json
 from copy import deepcopy
 
 import pytest
-from fastapi.testclient import TestClient
+from event_test_client import ReaderClient as TestClient
 
 import scripts.migrate_events as migration
 import src.nosql as nosql

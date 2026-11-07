@@ -2,7 +2,7 @@ from copy import deepcopy
 from decimal import Decimal
 import runpy
 
-from fastapi.testclient import TestClient
+from event_test_client import ReaderClient as TestClient
 from pydantic import ValidationError
 import pytest
 

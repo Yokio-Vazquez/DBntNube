@@ -19,7 +19,9 @@ from .event_schemas import (
 from .models import Game, GameMetric
 import os
 from .pagination import InvalidCursor
-from .nosql import query_events, query_events_page
+from .event_access import require_event
+from .schemas import EventDocument
+from .nosql import create_event, query_events, query_events_page
 
 app = FastAPI(title="CDRL API - Métricas de Videojuegos")
 
@@ -38,7 +40,7 @@ def pagination_limits():
 EVENTS_PAGE_DEFAULT_LIMIT, EVENTS_PAGE_MAX_LIMIT = pagination_limits()
 
 
-@app.get("/events/page", responses={400: {"description": "Cursor invalido"},
+@app.get("/events/page", dependencies=[Depends(require_event("read"))], responses={400: {"description": "Cursor invalido"},
                                    500: {"description": "Version almacenada no soportada"},
                                    503: {"description": "DynamoDB no disponible"}})
 def get_events_page(
@@ -76,6 +78,7 @@ def health_check():
 
 @app.get(
     "/events",
+    dependencies=[Depends(require_event("read"))],
     response_model=list[EventV1 | EventV2 | EventV3],
     response_model_exclude_none=True,
 )
@@ -98,6 +101,17 @@ def get_events(
             status_code=503,
             detail="Service Unavailable: No se pudo consultar DynamoDB.",
         ) from error
+
+@app.post("/events", status_code=201, dependencies=[Depends(require_event("create"))])
+def post_event(event: EventDocument):
+    try:
+        created = create_event(event)
+    except (ClientError, BotoCoreError) as error:
+        raise HTTPException(503, "DynamoDB no disponible") from error
+    if not created:
+        raise HTTPException(409, "Evento existente")
+    return {"game_id": event.game_id, "event_key": event.event_key}
+
 
 def metric_to_dict(metric: GameMetric):
     return {

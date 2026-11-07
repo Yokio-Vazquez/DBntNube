@@ -1,5 +1,5 @@
 import pytest
-from fastapi.testclient import TestClient
+from event_test_client import ReaderClient as TestClient
 from sqlalchemy.dialects import postgresql
 from src.database import get_db_writer
 from src.main import app
