@@ -1,0 +1,11 @@
+# Persona 2 · Auditoría de eventos y remediación
+
+Tu entrega es un cambio de código, una prueba de regresión y un reporte en `docs/`. Parte de la matriz de `docs/ADR-009-controles-eventos.md` y del commit de Persona 1 `d64cefc`.
+
+1. **Define el contrato con Persona 3.** Acuerden dónde consultar los registros y los valores exactos para actor, acción, recurso y resultado. Por ejemplo, una creación rechazada por permisos puede producir `{"actor":"reader","action":"create","resource":"events","outcome":"denied"}`. Usa la identidad resuelta por el servidor. Cuando falle la autenticación, usa un identificador fijo como `anonymous`.
+2. **Cubre las tres rutas.** Sigue una solicitud desde `src/event_access.py` hasta `src/main.py`. Instrumenta los rechazos 401 y 403 aunque el manejador nunca se ejecute. Para GET /events, GET /events/page y POST /events, registra el éxito después de conocer el resultado del almacenamiento. Distingue un rechazo de permisos, un conflicto por clave duplicada y una indisponibilidad del servicio.
+3. **Revisa cómo se guarda el registro.** Examina `record_audit` en `src/audit.py` y su manejo de transacciones antes de reutilizarlo. Comprueba que un rechazo sigue siendo consultable después de responder y que cada solicitud de prueba produce un solo resultado final. Construye el registro con campos permitidos y valores controlados. Omite cabeceras, cuerpo, variables de entorno, datos personales y mensajes crudos de excepción.
+4. **Demuestra una remediación real.** Un candidato es la ausencia de un registro al denegar una creación al lector. Primero escribe una prueba que reproduzca la omisión en la base de Persona 1. Conserva el resultado observado, aplica el cambio y ejecuta de nuevo la misma prueba. Introduce un marcador sintético único en una cabecera de prueba y comprueba que no aparece en la salida de auditoría.
+5. **Entrega bajo tu autoría.** En el reporte incluye el escenario, la causa, los comandos reproducibles, el resultado anterior y posterior y un registro saneado. Confirma tus cambios con tu identidad Git. Comparte con Persona 3 el SHA, el nombre de la prueba y la consulta que recupera los eventos.
+
+Terminas cuando Persona 3 puede ejecutar la prueba desde tu commit y localizar el registro esperado sin acceder a ninguna credencial.
