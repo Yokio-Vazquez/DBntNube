@@ -28,6 +28,15 @@ def test_get_events_queries_by_game(monkeypatch):
     assert response.status_code == 200
     assert response.json() == [{**expected[0], "schemaVersion": 1}]
 
+def test_event_audit_override_is_removed_after_request(monkeypatch):
+    monkeypatch.delitem(app.dependency_overrides, get_db_writer, raising=False)
+    monkeypatch.setattr(main_module, "query_events", lambda game_id: [])
+
+    response = client.get("/events", params={"game_id": 1})
+
+    assert response.status_code == 200
+    assert get_db_writer not in app.dependency_overrides
+
 def test_create_metric_does_not_return_generated_id(monkeypatch):
     statements = []
 
