@@ -15,6 +15,9 @@ BEGIN
     IF to_regclass('public.audit_logs') IS NOT NULL THEN
         EXECUTE 'GRANT INSERT ON TABLE public.audit_logs TO cdrl_writer';
     END IF;
+    IF to_regclass('public.event_audit_outbox') IS NOT NULL THEN
+        EXECUTE 'GRANT SELECT, INSERT, UPDATE ON TABLE public.event_audit_outbox TO cdrl_writer';
+    END IF;
     IF to_regclass('public.games_id_seq') IS NOT NULL THEN
         EXECUTE 'GRANT USAGE, SELECT ON SEQUENCE public.games_id_seq TO cdrl_writer';
     END IF;

@@ -20,13 +20,23 @@ def test_get_events_queries_by_game(monkeypatch):
         "event_type": "session_started",
         "occurred_at": "2026-09-27T10:00:00Z",
         "source": "synthetic-fixture",
+        "_audit_operation_id": "internal-marker-must-not-be-returned",
     }]
     monkeypatch.setattr(main_module, "query_events", lambda game_id: expected)
 
     response = client.get("/events", params={"game_id": 1})
 
     assert response.status_code == 200
-    assert response.json() == [{**expected[0], "schemaVersion": 1}]
+    assert response.json() == [
+        {
+            **{
+                key: value
+                for key, value in expected[0].items()
+                if key != "_audit_operation_id"
+            },
+            "schemaVersion": 1,
+        }
+    ]
 
 def test_event_audit_override_is_removed_after_request(monkeypatch):
     monkeypatch.delitem(app.dependency_overrides, get_db_writer, raising=False)

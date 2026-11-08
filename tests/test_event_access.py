@@ -1,4 +1,5 @@
 import secrets
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 from fastapi.testclient import TestClient
@@ -14,6 +15,7 @@ class AuditSession:
 
     def execute(self, statement):
         self.pending.append(statement.compile().params)
+        return SimpleNamespace(rowcount=1)
 
     def commit(self):
         self.persisted.extend(self.pending)
@@ -69,8 +71,12 @@ def test_event_permissions(monkeypatch):
         else:
             main.app.dependency_overrides[get_db_writer] = previous_override
 
-    assert len(session.persisted) == 7
-    assert [row["outcome"] for row in session.persisted] == [
+    audit_rows = [
+        row for row in session.persisted
+        if row.get("resource_type") == "events"
+    ]
+    assert len(audit_rows) == 7
+    assert [row["outcome"] for row in audit_rows] == [
         "denied",
         "denied",
         "denied",

@@ -147,12 +147,15 @@ def query_events(game_id: int):
     table = dynamodb_resource().Table(TABLE_NAME)
     return _query_all(table.query, KeyConditionExpression=Key("game_id").eq(game_id))
 
-def create_event(event: EventDocument) -> bool:
+def create_event(event: EventDocument, audit_operation_id: str | None = None) -> bool:
     table = dynamodb_resource().Table(TABLE_NAME)
+    item = with_time_key(event.model_dump(by_alias=True))
+    if audit_operation_id is not None:
+        item["_audit_operation_id"] = audit_operation_id
 
     try:
         table.put_item(
-            Item=with_time_key(event.model_dump(by_alias=True)),
+            Item=item,
             ConditionExpression=(
                 Attr("game_id").not_exists()
                 & Attr("event_key").not_exists()
@@ -165,10 +168,16 @@ def create_event(event: EventDocument) -> bool:
         raise
 
 
-def get_event(game_id: int, event_key: str) -> dict | None:
+def get_event(
+    game_id: int,
+    event_key: str,
+    *,
+    consistent_read: bool = False,
+) -> dict | None:
     table = dynamodb_resource().Table(TABLE_NAME)
     response = table.get_item(
-        Key={"game_id": game_id, "event_key": event_key}
+        Key={"game_id": game_id, "event_key": event_key},
+        ConsistentRead=consistent_read,
     )
     return response.get("Item")
 

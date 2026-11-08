@@ -1,10 +1,11 @@
+from uuid import uuid4
 from collections.abc import Mapping
 
-from sqlalchemy import insert
+from sqlalchemy import func, insert, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from .models import AuditLog
+from .models import AuditLog, EventAuditOutbox
 
 
 _SENSITIVE_KEY_PARTS = (
@@ -31,6 +32,10 @@ EVENT_AUDIT_OUTCOMES = {
 
 class AuditPersistenceError(RuntimeError):
     """The event audit record could not be committed."""
+
+
+class AuditOutboxStateError(RuntimeError):
+    """The event audit outbox entry is no longer pending."""
 
 
 def sanitize_audit_details(value):
@@ -113,3 +118,98 @@ def record_event_audit(
             "No se pudo confirmar el registro de auditoría de eventos."
         ) from error
     return entry
+
+
+def begin_event_audit(
+    db: Session,
+    *,
+    actor_id: str,
+    game_id: int,
+    event_key: str,
+) -> str:
+    if actor_id != "writer":
+        raise ValueError("Identidad de auditoría de eventos inválida.")
+
+    operation_id = uuid4().hex
+    try:
+        db.execute(
+            insert(EventAuditOutbox).values(
+                operation_id=operation_id,
+                actor_id=actor_id,
+                game_id=game_id,
+                event_key=event_key,
+                status="pending",
+            )
+        )
+        db.commit()
+    except SQLAlchemyError as error:
+        db.rollback()
+        raise AuditPersistenceError(
+            "No se pudo reservar la operación de auditoría de eventos."
+        ) from error
+    return operation_id
+
+
+def complete_event_audit(
+    db: Session,
+    *,
+    operation_id: str,
+    actor_id: str,
+    game_id: int,
+    event_key: str,
+    outcome: str,
+) -> AuditLog:
+    if actor_id != "writer":
+        raise ValueError("Identidad de auditoría de eventos inválida.")
+    if outcome not in {"success", "conflict", "unavailable", "failure"}:
+        raise ValueError("Resultado de auditoría de eventos inválido.")
+
+    try:
+        entry = record_audit(
+            db,
+            actor_id=actor_id,
+            action="create",
+            resource_type="events",
+            resource_id=None,
+            outcome=outcome,
+        )
+        result = db.execute(
+            update(EventAuditOutbox)
+            .where(
+                EventAuditOutbox.operation_id == operation_id,
+                EventAuditOutbox.actor_id == actor_id,
+                EventAuditOutbox.game_id == game_id,
+                EventAuditOutbox.event_key == event_key,
+                EventAuditOutbox.status == "pending",
+            )
+            .values(
+                status="completed",
+                outcome=outcome,
+                completed_at=func.now(),
+            )
+        )
+        if result.rowcount != 1:
+            db.rollback()
+            raise AuditOutboxStateError(
+                "La operación de auditoría ya no está pendiente."
+            )
+        db.commit()
+    except AuditOutboxStateError:
+        raise
+    except SQLAlchemyError as error:
+        db.rollback()
+        raise AuditPersistenceError(
+            "No se pudo completar el registro de auditoría de eventos."
+        ) from error
+    return entry
+
+
+def reconciled_event_outcome(
+    operation_id: str,
+    stored_event: Mapping | None,
+) -> str:
+    if stored_event is None:
+        return "unavailable"
+    if stored_event.get("_audit_operation_id") == operation_id:
+        return "success"
+    return "conflict"

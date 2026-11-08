@@ -1,6 +1,7 @@
 """Client helper for authenticated event API tests."""
 import os
 import secrets
+from types import SimpleNamespace
 from urllib.parse import urlsplit
 
 from fastapi.testclient import TestClient
@@ -19,6 +20,7 @@ class MemoryAuditSession:
 
     def execute(self, statement):
         self.pending.append(statement.compile().params)
+        return SimpleNamespace(rowcount=1)
 
     def commit(self):
         self.persisted.extend(self.pending)

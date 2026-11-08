@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, BigInteger, CheckConstraint, Numeric, Date, text
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, BigInteger, CheckConstraint, Numeric, Date, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 from .database import Base
@@ -75,3 +75,15 @@ class AuditLog(Base):
     details = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
     occurred_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
+
+class EventAuditOutbox(Base):
+    __tablename__ = "event_audit_outbox"
+
+    operation_id = Column(String(32), primary_key=True)
+    actor_id = Column(String(120), nullable=False)
+    game_id = Column(BigInteger, nullable=False)
+    event_key = Column(Text, nullable=False)
+    status = Column(String(20), nullable=False, server_default="pending")
+    outcome = Column(String(20), nullable=True)
+    requested_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    completed_at = Column(DateTime(timezone=True), nullable=True)

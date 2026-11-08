@@ -7,7 +7,14 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy import func, insert, select
 from botocore.exceptions import BotoCoreError, ClientError
 from .database import get_db_writer, get_db_reader
-from .audit import AuditPersistenceError, record_audit, record_event_audit
+from .audit import (
+    AuditPersistenceError,
+    AuditOutboxStateError,
+    begin_event_audit,
+    complete_event_audit,
+    record_audit,
+    record_event_audit,
+)
 from .event_schemas import (
     EventV1,
     EventV2,
@@ -180,29 +187,50 @@ def post_event(
     db: Session = Depends(get_db_writer),
 ):
     try:
-        created = create_event(event)
+        operation_id = begin_event_audit(
+            db,
+            actor_id=actor,
+            game_id=event.game_id,
+            event_key=event.event_key,
+        )
+    except AuditPersistenceError as error:
+        raise HTTPException(503, "Auditoría no disponible") from error
+
+    try:
+        created = create_event(event, audit_operation_id=operation_id)
     except (ClientError, BotoCoreError) as error:
-        _record_event_audit(
-            db,
-            actor_id=actor,
-            action="create",
-            outcome="unavailable",
-        )
+        try:
+            complete_event_audit(
+                db,
+                operation_id=operation_id,
+                actor_id=actor,
+                game_id=event.game_id,
+                event_key=event.event_key,
+                outcome="unavailable",
+            )
+        except (AuditPersistenceError, AuditOutboxStateError) as audit_error:
+            raise HTTPException(
+                503,
+                "Auditoría pendiente de reconciliación",
+            ) from audit_error
         raise HTTPException(503, "DynamoDB no disponible") from error
-    if not created:
-        _record_event_audit(
+    outcome = "success" if created else "conflict"
+    try:
+        complete_event_audit(
             db,
+            operation_id=operation_id,
             actor_id=actor,
-            action="create",
-            outcome="conflict",
+            game_id=event.game_id,
+            event_key=event.event_key,
+            outcome=outcome,
         )
+    except (AuditPersistenceError, AuditOutboxStateError) as error:
+        raise HTTPException(
+            503,
+            "Auditoría pendiente de reconciliación",
+        ) from error
+    if not created:
         raise HTTPException(409, "Evento existente")
-    _record_event_audit(
-        db,
-        actor_id=actor,
-        action="create",
-        outcome="success",
-    )
     return {"game_id": event.game_id, "event_key": event.event_key}
 
 
