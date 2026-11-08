@@ -10,7 +10,9 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     outcome VARCHAR(20) NOT NULL,
     details JSONB NOT NULL DEFAULT '{}'::jsonb,
     occurred_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT audit_logs_outcome_valid CHECK (outcome IN ('success', 'failure')),
+    CONSTRAINT audit_logs_outcome_valid CHECK (
+        outcome IN ('success', 'failure', 'denied', 'conflict', 'unavailable')
+    ),
     CONSTRAINT audit_logs_action_not_blank CHECK (length(trim(action)) > 0),
     CONSTRAINT audit_logs_resource_type_not_blank CHECK (length(trim(resource_type)) > 0)
 );

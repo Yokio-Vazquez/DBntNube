@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy import func, insert, select
 from botocore.exceptions import BotoCoreError, ClientError
 from .database import get_db_writer, get_db_reader
-from .audit import record_audit
+from .audit import AuditPersistenceError, record_audit, record_event_audit
 from .event_schemas import (
     EventV1,
     EventV2,
@@ -26,6 +26,26 @@ from .nosql import create_event, query_events, query_events_page
 app = FastAPI(title="CDRL API - Métricas de Videojuegos")
 
 
+def _record_event_audit(
+    db: Session,
+    *,
+    actor_id: str,
+    action: str,
+    outcome: str,
+    resource_id: str | None = None,
+) -> None:
+    try:
+        record_event_audit(
+            db,
+            actor_id=actor_id,
+            action=action,
+            outcome=outcome,
+            resource_id=resource_id,
+        )
+    except AuditPersistenceError as error:
+        raise HTTPException(503, "Auditoría no disponible") from error
+
+
 def pagination_limits():
     try:
         default = int(os.getenv("EVENTS_PAGE_DEFAULT_LIMIT", "25"))
@@ -40,7 +60,7 @@ def pagination_limits():
 EVENTS_PAGE_DEFAULT_LIMIT, EVENTS_PAGE_MAX_LIMIT = pagination_limits()
 
 
-@app.get("/events/page", dependencies=[Depends(require_event("read"))], responses={400: {"description": "Cursor invalido"},
+@app.get("/events/page", responses={400: {"description": "Cursor invalido"},
                                    500: {"description": "Version almacenada no soportada"},
                                    503: {"description": "DynamoDB no disponible"}})
 def get_events_page(
@@ -48,20 +68,49 @@ def get_events_page(
     limit: int = Query(EVENTS_PAGE_DEFAULT_LIMIT, ge=1, le=EVENTS_PAGE_MAX_LIMIT),
     cursor: str | None = None,
     version: int | None = Query(None, ge=1, le=3),
+    actor: str = Depends(require_event("read")),
+    db: Session = Depends(get_db_writer),
 ):
     try:
         page = query_events_page(game_id, limit, cursor)
         items = [normalize_event(project(item, version) if version is not None else item)
                  .model_dump(by_alias=True, exclude_none=True) for item in page["items"]]
+        _record_event_audit(
+            db,
+            actor_id=actor,
+            action="read",
+            outcome="success",
+            resource_id=str(game_id),
+        )
         return {"items": items, "nextCursor": page["nextCursor"],
                 "limit": limit, "order": "occurred_at_desc"}
     except InvalidCursor as error:
+        _record_event_audit(
+            db,
+            actor_id=actor,
+            action="read",
+            outcome="failure",
+            resource_id=str(game_id),
+        )
         raise HTTPException(400, detail=str(error)) from error
     except UnsupportedEventVersion as error:
+        _record_event_audit(
+            db,
+            actor_id=actor,
+            action="read",
+            outcome="failure",
+            resource_id=str(game_id),
+        )
         raise HTTPException(500, detail="DynamoDB contiene un documento con una version no soportada.") from error
     except (BotoCoreError, ClientError) as error:
+        _record_event_audit(
+            db,
+            actor_id=actor,
+            action="read",
+            outcome="unavailable",
+            resource_id=str(game_id),
+        )
         raise HTTPException(503, detail="Service Unavailable: No se pudo consultar DynamoDB.") from error
-
 class GameMetricBase(BaseModel):
     model_config = ConfigDict(extra='forbid')
     
@@ -78,38 +127,82 @@ def health_check():
 
 @app.get(
     "/events",
-    dependencies=[Depends(require_event("read"))],
     response_model=list[EventV1 | EventV2 | EventV3],
     response_model_exclude_none=True,
 )
 def get_events(
     game_id: int = Query(..., gt=0),
     version: int | None = Query(default=None, ge=1, le=3),
+    actor: str = Depends(require_event("read")),
+    db: Session = Depends(get_db_writer),
 ):
     try:
-        return [
+        events = [
             normalize_event(project(event, version) if version is not None else event)
             for event in query_events(game_id)
         ]
+        _record_event_audit(
+            db,
+            actor_id=actor,
+            action="read",
+            outcome="success",
+            resource_id=str(game_id),
+        )
+        return events
     except UnsupportedEventVersion as error:
+        _record_event_audit(
+            db,
+            actor_id=actor,
+            action="read",
+            outcome="failure",
+            resource_id=str(game_id),
+        )
         raise HTTPException(
             status_code=500,
             detail="DynamoDB contiene un documento con una version no soportada.",
         ) from error
     except (BotoCoreError, ClientError) as error:
+        _record_event_audit(
+            db,
+            actor_id=actor,
+            action="read",
+            outcome="unavailable",
+            resource_id=str(game_id),
+        )
         raise HTTPException(
             status_code=503,
             detail="Service Unavailable: No se pudo consultar DynamoDB.",
         ) from error
-
-@app.post("/events", status_code=201, dependencies=[Depends(require_event("create"))])
-def post_event(event: EventDocument):
+@app.post("/events", status_code=201)
+def post_event(
+    event: EventDocument,
+    actor: str = Depends(require_event("create")),
+    db: Session = Depends(get_db_writer),
+):
     try:
         created = create_event(event)
     except (ClientError, BotoCoreError) as error:
+        _record_event_audit(
+            db,
+            actor_id=actor,
+            action="create",
+            outcome="unavailable",
+        )
         raise HTTPException(503, "DynamoDB no disponible") from error
     if not created:
+        _record_event_audit(
+            db,
+            actor_id=actor,
+            action="create",
+            outcome="conflict",
+        )
         raise HTTPException(409, "Evento existente")
+    _record_event_audit(
+        db,
+        actor_id=actor,
+        action="create",
+        outcome="success",
+    )
     return {"game_id": event.game_id, "event_key": event.event_key}
 
 
