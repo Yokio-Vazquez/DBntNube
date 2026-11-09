@@ -30,8 +30,8 @@
       "role": "Auditoría de eventos, outbox transaccional, reconciliación y remediación de denegaciones",
       "commitShas": [
         "bd99aca381a99912864075071779b4110b0122c6",
-        "ea623d38645c719ef6d4822bc21f822ef45b597c",
-        "3c997a4c7cf3d3b762c452e82e850dafeac5e4d2",
+        "ea623d3fa9c30b42f236ed809974bea58a9b4593",
+        "3c997a44fd22c9e3659f7cd28b3496ce32026a12",
         "f0b0385a68f2e74b336933a114567a67536172de"
       ],
       "files": [
