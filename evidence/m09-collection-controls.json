@@ -1,0 +1,171 @@
+{
+  "assignmentId": "m09-collection-controls",
+  "commitSha": "f0b0385a68f2e74b336933a114567a67536172de",
+  "milestone": "M09 — Controles de acceso por colección y auditoría",
+  "team": [
+    {
+      "persona": 1,
+      "name": "Yokio Yosafat Vázquez Carrillo",
+      "role": "Autorización por colección, tokens de servicio Bearer y ADR-009",
+      "commitShas": [
+        "d64cefcf56b1e54fb05a216fe56cc525460d1c98",
+        "edf0313eb19d94ddf9e75a366bd6d404bc35dbfb"
+      ],
+      "files": [
+        "src/event_access.py",
+        "src/main.py",
+        "docs/ADR-009-controles-eventos.md",
+        "docs/M09-persona2-auditoria.md",
+        "docs/M09-persona3-pruebas-entrega.md",
+        "docs/plan-equipo-controles-por-coleccion.md",
+        "scripts/run_critical_path.py",
+        "tests/event_test_client.py",
+        "tests/test_event_access.py"
+      ],
+      "description": "Definición de matriz de autorización en ADR-009, resolución de identidad en servidor (reader/writer), dependencias require_event('read') y require_event('create'), actualización de endpoints /events y /events/page y suite base de pruebas."
+    },
+    {
+      "persona": 2,
+      "name": "Diego de Jesús Huerta Barroso",
+      "role": "Auditoría de eventos, outbox transaccional, reconciliación y remediación de denegaciones",
+      "commitShas": [
+        "bd99aca381a99912864075071779b4110b0122c6",
+        "ea623d38645c719ef6d4822bc21f822ef45b597c",
+        "3c997a4c7cf3d3b762c452e82e850dafeac5e4d2",
+        "f0b0385a68f2e74b336933a114567a67536172de"
+      ],
+      "files": [
+        "src/audit.py",
+        "src/event_access.py",
+        "src/main.py",
+        "src/models.py",
+        "src/nosql.py",
+        "scripts/reconcile_event_audit.py",
+        "alembic/versions/a909e501_m09_event_audit_outcomes.py",
+        "alembic/versions/b41c7d8e2f90_event_audit_outbox.py",
+        "db/migrations/004_audit_and_soft_delete.sql",
+        "db/migrations/005_event_audit_outbox.sql",
+        "docs/M09-persona2-entrega.md",
+        "tests/test_m09_event_audit.py"
+      ],
+      "description": "Instrumentación de auditoría para decisiones permitidas y denegadas (401/403 auditadas antes de ejecutar endpoints), outbox transaccional para POST /events, reconciliador de operaciones pendientes, migración Alembic para nuevos outcomes y remediación documentada."
+    },
+    {
+      "persona": 3,
+      "name": "Salomón Álvarez Gómez",
+      "role": "Automatización de casos de prueba, verificación de auditoría y marcadores, reporte de resultados, evidencia M09 y entrega",
+      "commitShas": [
+        "f0b0385a68f2e74b336933a114567a67536172de"
+      ],
+      "files": [
+        "tests/test_event_access.py",
+        "tests/event_test_client.py",
+        "scripts/verify_m09_controls.py",
+        "scripts/verify_base.py",
+        "Makefile",
+        ".gitignore",
+        "artifacts/m09-collection-controls-results.json",
+        "artifacts/m09-controles-coleccion-results.json",
+        "evidence/m09-collection-controls.json",
+        "evidence/m09-controles-coleccion.json",
+        "docs/M09-persona3-entrega.md",
+        "README.md"
+      ],
+      "description": "Automatización reproducible de los 4 casos (Normal, Límite lectura, Límite escritura, Fallo declarado), comprobación de campos de auditoría obligatorios, verificación de exclusión de marcadores sintéticos sensibles, integración en make verify, script de verificación, validación en verify_base.py y reporte completo de entrega."
+    }
+  ],
+  "cases": {
+    "normal": {
+      "description": "Un actor escritor crea un evento sintético y un lector lo consulta por GET /events y GET /events/page.",
+      "status": "passed",
+      "checks": {
+        "postEvent": 201,
+        "getEvents": 200,
+        "getPage": 200,
+        "eventKeyRetrieved": true,
+        "auditCreate": "success",
+        "auditRead": "success",
+        "auditPage": "success"
+      }
+    },
+    "boundaryRead": {
+      "description": "Consulta de eventos existentes sin credenciales (GET /events y GET /events/page).",
+      "status": "passed",
+      "checks": {
+        "getEventsStatus": 401,
+        "getPageStatus": 401,
+        "payloadProtected": true,
+        "auditOutcome": "denied",
+        "actor": "anonymous"
+      }
+    },
+    "boundaryWrite": {
+      "description": "Intento de creación con credencial de lector (exclusivo lectura).",
+      "status": "passed",
+      "checks": {
+        "postStatus": 403,
+        "documentNotCreated": true,
+        "auditOutcome": "denied",
+        "actor": "reader"
+      }
+    },
+    "declaredFailure": {
+      "description": "Intento de creación con credenciales duplicadas/colisionadas (política deniega por ambigüedad).",
+      "status": "passed",
+      "checks": {
+        "postStatus": 401,
+        "documentNotCreated": true,
+        "auditOutcome": "denied",
+        "actor": "anonymous"
+      }
+    }
+  },
+  "auditVerification": {
+    "mandatoryFieldsChecked": [
+      "actor_id",
+      "action",
+      "resource_type",
+      "outcome"
+    ],
+    "storageTable": "public.audit_logs",
+    "resourceTarget": "events",
+    "markerExclusionVerified": true,
+    "marker": "Excluido de audit_logs, artifacts y evidence"
+  },
+  "remediation": {
+    "description": "Remediación de ausencia de registro de auditoría al denegar creación a lector (Persona 2).",
+    "regressionTest": "test_reader_create_denial_is_audited_without_request_marker",
+    "persona2Commit": "f0b0385a68f2e74b336933a114567a67536172de",
+    "verified": true
+  },
+  "environment": {
+    "target": "docker-compose-local",
+    "platform": "Windows-11",
+    "pythonVersion": "3.13.7",
+    "ci": false,
+    "learnerLab": "No ejecutado: AWS Academy Learner Lab no habilitado; Docker Compose local como respaldo oficial"
+  },
+  "commands": {
+    "setup": "make setup",
+    "verify": "make verify",
+    "run": "make run",
+    "m09Verify": "python scripts/verify_m09_controls.py",
+    "tests": "python -m pytest tests/test_event_access.py tests/test_m09_event_audit.py -v"
+  },
+  "results": {
+    "m09Cases": "4/4 passed",
+    "remediation": "passed",
+    "makeVerify": "passed",
+    "totalProjectTests": "204 passed"
+  },
+  "assumptions": [
+    "Docker Compose y emuladores locales sirven como respaldo reproducible cuando AWS Academy Learner Lab no está disponible",
+    "Los tokens Bearer generados aleatoriamente simulan credenciales seguras de identidades de servicio",
+    "La denegación por defecto aplica cuando las variables de entorno están ausentes o colisionan"
+  ],
+  "limitations": [
+    "AWS Academy Learner Lab no estuvo habilitado; validación realizada con Docker y respaldos locales reproducibles",
+    "Los tokens son opacos y se configuran por variables de entorno en lugar de un proveedor OIDC o AWS Cognito externo",
+    "No se dispone de auditoría de red a nivel de firewall para llamadas que no alcancen la API FastAPI"
+  ]
+}

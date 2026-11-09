@@ -1,0 +1,135 @@
+{
+  "assignmentId": "m09-collection-controls",
+  "generatedAt": "2026-11-09T02:07:35.831672+00:00",
+  "cases": [
+    {
+      "id": "normal",
+      "name": "Normal: creación autorizada y consulta autorizada",
+      "expected": {
+        "postStatus": 201,
+        "getEventsStatus": 200,
+        "getPageStatus": 200,
+        "keyRecoveredInBothQueries": true,
+        "auditOutcomes": [
+          "success",
+          "success",
+          "success"
+        ],
+        "auditActors": [
+          "writer",
+          "reader",
+          "reader"
+        ]
+      },
+      "observed": {
+        "postStatus": 201,
+        "getEventsStatus": 200,
+        "getPageStatus": 200,
+        "keyRecoveredInBothQueries": true,
+        "auditOutcomes": [
+          "success",
+          "success",
+          "success"
+        ],
+        "auditActors": [
+          "writer",
+          "reader",
+          "reader"
+        ]
+      },
+      "status": "passed"
+    },
+    {
+      "id": "boundary_read",
+      "name": "Límite 1 (Lectura): consulta no autenticada rechazada sin revelar datos",
+      "expected": {
+        "getEventsStatus": 401,
+        "getPageStatus": 401,
+        "bodyOmitsDocument": true,
+        "auditOutcomes": [
+          "denied",
+          "denied"
+        ],
+        "auditActors": [
+          "anonymous",
+          "anonymous"
+        ]
+      },
+      "observed": {
+        "getEventsStatus": 401,
+        "getPageStatus": 401,
+        "bodyOmitsDocument": true,
+        "auditOutcomes": [
+          "denied",
+          "denied"
+        ],
+        "auditActors": [
+          "anonymous",
+          "anonymous"
+        ]
+      },
+      "status": "passed"
+    },
+    {
+      "id": "boundary_write",
+      "name": "Límite 2 (Escritura): creación rechazada con credencial de lector",
+      "expected": {
+        "postStatus": 403,
+        "documentRemainsAbsent": true,
+        "auditOutcome": "denied",
+        "auditActor": "reader",
+        "auditAction": "create"
+      },
+      "observed": {
+        "postStatus": 403,
+        "documentRemainsAbsent": true,
+        "auditOutcome": "denied",
+        "auditActor": "reader",
+        "auditAction": "create"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "declared_failure",
+      "name": "Fallo Declarado: colisión de credenciales lector/escritor falla de forma cerrada",
+      "expected": {
+        "postStatus": 401,
+        "documentNotCreated": true,
+        "auditOutcome": "denied",
+        "auditActor": "anonymous",
+        "auditAction": "create"
+      },
+      "observed": {
+        "postStatus": 401,
+        "documentNotCreated": true,
+        "auditOutcome": "denied",
+        "auditActor": "anonymous",
+        "auditAction": "create"
+      },
+      "status": "passed"
+    }
+  ],
+  "markerExclusionCheck": {
+    "mandatoryFieldsPresent": true,
+    "mandatoryFields": [
+      "actor_id",
+      "action",
+      "resource_type",
+      "outcome"
+    ],
+    "markerFoundInAuditLogs": false,
+    "passed": true
+  },
+  "remediation": {
+    "remediationDefect": "Ausencia de registro de auditoría al denegar creación a rol reader",
+    "persona2Commit": "f0b0385a68f2e74b336933a114567a67536172de",
+    "regressionTest": "test_reader_create_denial_is_audited_without_request_marker",
+    "verified": true
+  },
+  "summary": {
+    "totalCases": 4,
+    "passed": 4,
+    "failed": 0,
+    "allPassed": true
+  }
+}

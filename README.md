@@ -83,3 +83,38 @@ Los artifacts se guardan en `artifacts/m08-benchmark-results.json` (quick, regen
 - [Reporte de rendimiento](docs/M08-reporte-rendimiento.md)
 - [Implementación Persona 1](docs/M08-persona1-implementacion.md)
 - [Correcciones Persona 2](docs/M08-persona2-correcciones.md)
+
+## M09 — Controles por colección y auditoría
+
+### Matriz de autorización (ADR-009)
+
+| Identidad de servicio | Consultar y paginar (`GET /events`, `GET /events/page`) | Crear (`POST /events`) | Actualizar o borrar por HTTP |
+|---|---|---|---|
+| Lector (`reader`) | Permitido (200) | 403 (Denegado) | Sin ruta |
+| Escritor (`writer`) | Permitido (200) | Permitido (201) | Sin ruta |
+| Sin credencial válida / Colisión | 401 (Denegado) | 401 (Denegado) | Sin ruta |
+
+### Variables de configuración
+
+| Variable | Descripción |
+|---|---|
+| `EVENTS_READER_TOKEN` | Token Bearer para identidad de servicio `reader` |
+| `EVENTS_WRITER_TOKEN` | Token Bearer para identidad de servicio `writer` |
+
+### Casos demostrados y verificación
+
+```bash
+python scripts/verify_m09_controls.py
+python -m pytest tests/test_event_access.py tests/test_m09_event_audit.py -v
+```
+
+El script genera `artifacts/m09-collection-controls-results.json` y `artifacts/m09-controles-coleccion-results.json`, verificando los 4 casos (Normal, Límite lectura, Límite escritura, Fallo declarado), la persistencia en `audit_logs` con los cuatro campos obligatorios y la exclusión estricta de marcadores y secretos.
+
+### Documentación M09
+
+- [ADR-009 — Controles de eventos](docs/ADR-009-controles-eventos.md)
+- [Plan de trabajo del equipo](docs/plan-equipo-controles-por-coleccion.md)
+- [Auditoría y remediación Persona 2](docs/M09-persona2-auditoria.md)
+- [Reporte de entrega Persona 2](docs/M09-persona2-entrega.md)
+- [Guía de entrega Persona 3](docs/M09-persona3-pruebas-entrega.md)
+- [Reporte de entrega Persona 3](docs/M09-persona3-entrega.md)

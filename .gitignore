@@ -14,6 +14,8 @@ artifacts/*.log
 !artifacts/m08-benchmark-report-baseline.json
 !artifacts/m08-benchmark-full.json
 !artifacts/m08-benchmark-aws.json
+!artifacts/m09-collection-controls-results.json
+!artifacts/m09-controles-coleccion-results.json
 evidence/*-local.json
 db/data/
 docker-data/

@@ -385,3 +385,82 @@ if scenarios.get("indexed_deep", {}).get("itemsRead", float("inf")) >= scenarios
     fail("M08 gate: indexed_deep.itemsRead must be less than baseline_deep.itemsRead")
 
 print("M08 validation passed")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 12. Validar archivos, evidencia y artifacts M09
+# ─────────────────────────────────────────────────────────────────────────────
+REQUIRED_M09 = [
+    "docs/ADR-009-controles-eventos.md",
+    "docs/M09-persona2-auditoria.md",
+    "docs/M09-persona2-entrega.md",
+    "docs/M09-persona3-pruebas-entrega.md",
+    "docs/plan-equipo-controles-por-coleccion.md",
+    "docs/M09-persona3-entrega.md",
+    "evidence/m09-collection-controls.json",
+    "artifacts/m09-collection-controls-results.json",
+    "src/event_access.py",
+    "scripts/verify_m09_controls.py",
+    "tests/test_event_access.py",
+    "tests/test_m09_event_audit.py",
+]
+for f in REQUIRED_M09:
+    if not Path(f).is_file():
+        fail(f"missing M09 required file: {f}")
+
+# --- Evidencia M09 ---
+evidence_m09 = json.loads(Path("evidence/m09-collection-controls.json").read_text(encoding="utf-8"))
+required_m09_ev = {
+    "assignmentId", "commitSha", "team", "cases", "auditVerification",
+    "remediation", "environment", "commands", "results", "assumptions", "limitations",
+}
+missing_m09_ev = sorted(required_m09_ev.difference(evidence_m09))
+if missing_m09_ev:
+    fail(f"missing M09 evidence fields: {', '.join(missing_m09_ev)}")
+if evidence_m09["assignmentId"] not in {"m09-collection-controls", "m09-controles-coleccion"}:
+    fail("unexpected M09 assignmentId")
+if not SHA_RE.match(str(evidence_m09["commitSha"])):
+    fail("M09 commitSha must be a full 40-character git SHA")
+team_m09 = evidence_m09["team"]
+if sorted(member.get("persona") for member in team_m09) != [1, 2, 3]:
+    fail("M09 evidence must document Personas 1, 2 and 3")
+for member in team_m09:
+    if not member.get("role") or not member.get("commitShas") or not member.get("files"):
+        fail(f"M09 persona {member.get('persona')} needs role, files and commitShas")
+    if not all(SHA_RE.match(sha) for sha in member["commitShas"]):
+        fail(f"M09 persona {member.get('persona')} has an invalid commit SHA")
+
+# Validar casos en evidencia
+required_cases = {"normal", "boundaryRead", "boundaryWrite", "declaredFailure"}
+if set(evidence_m09.get("cases", {})) != required_cases:
+    fail(f"M09 evidence cases must include exactly {required_cases}")
+for case_name, case_data in evidence_m09["cases"].items():
+    if case_data.get("status") != "passed":
+        fail(f"M09 evidence case {case_name} status must be 'passed'")
+
+if evidence_m09.get("auditVerification", {}).get("markerExclusionVerified") is not True:
+    fail("M09 auditVerification.markerExclusionVerified must be true")
+if evidence_m09.get("remediation", {}).get("verified") is not True:
+    fail("M09 remediation.verified must be true")
+if not evidence_m09.get("limitations"):
+    fail("M09 evidence must declare limitations")
+
+# --- Artifact M09 ---
+artifact_m09 = json.loads(Path("artifacts/m09-collection-controls-results.json").read_text(encoding="utf-8"))
+if artifact_m09.get("assignmentId") not in {"m09-collection-controls", "m09-controles-coleccion"}:
+    fail("unexpected M09 artifact assignmentId")
+
+artifact_cases = artifact_m09.get("cases", [])
+if len(artifact_cases) != 4:
+    fail("M09 artifact must contain exactly 4 demonstrated cases")
+for ac in artifact_cases:
+    if ac.get("status") != "passed":
+        fail(f"M09 artifact case {ac.get('id')} did not pass")
+
+if artifact_m09.get("markerExclusionCheck", {}).get("passed") is not True:
+    fail("M09 artifact markerExclusionCheck must be true")
+if artifact_m09.get("remediation", {}).get("verified") is not True:
+    fail("M09 artifact remediation.verified must be true")
+if artifact_m09.get("summary", {}).get("allPassed") is not True:
+    fail("M09 artifact summary.allPassed must be true")
+
+print("M09 validation passed")
