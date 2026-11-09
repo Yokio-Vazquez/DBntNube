@@ -1,6 +1,6 @@
 {
   "assignmentId": "m09-collection-controls",
-  "commitSha": "f0b0385a68f2e74b336933a114567a67536172de",
+  "commitSha": "9253c8252c024c3f31ecf6fe8702139a79cef68c",
   "milestone": "M09 — Controles de acceso por colección y auditoría",
   "team": [
     {
@@ -55,7 +55,7 @@
       "name": "Salomón Álvarez Gómez",
       "role": "Automatización de casos de prueba, verificación de auditoría y marcadores, reporte de resultados, evidencia M09 y entrega",
       "commitShas": [
-        "f0b0385a68f2e74b336933a114567a67536172de"
+        "9253c8252c024c3f31ecf6fe8702139a79cef68c"
       ],
       "files": [
         "tests/test_event_access.py",
