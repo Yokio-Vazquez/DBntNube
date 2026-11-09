@@ -172,6 +172,7 @@ def complete_event_audit(
             resource_type="events",
             resource_id=None,
             outcome=outcome,
+            details={"operation_id": operation_id},
         )
         result = db.execute(
             update(EventAuditOutbox)

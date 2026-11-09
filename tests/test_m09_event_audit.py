@@ -2,12 +2,14 @@ import secrets
 from types import SimpleNamespace
 from unittest.mock import Mock
 
+from botocore.exceptions import ClientError, ReadTimeoutError
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import SQLAlchemyError
 
 from src import main
 from src.audit import complete_event_audit, reconciled_event_outcome
 from src.database import get_db_writer
+from scripts.reconcile_event_audit import reconcile_operations
 
 
 class AuditSession:
@@ -188,9 +190,14 @@ def test_duplicate_and_storage_unavailable_have_distinct_audit_outcomes(monkeypa
         row for row in session.persisted if row["_table"] == "audit_logs"
     ]
     assert [(row["outcome"], row["action"]) for row in audit_rows] == [
-        ("conflict", "create"),
-        ("unavailable", "create"),
+        ("conflict", "create")
     ]
+    outbox_rows = [
+        row for row in session.persisted
+        if row["_table"] == "event_audit_outbox"
+    ]
+    assert any(row["status"] == "pending" for row in outbox_rows)
+    assert any(row["status"] == "completed" for row in outbox_rows)
 
 
 def test_created_event_with_failed_audit_commit_is_reconciled(monkeypatch):
@@ -271,3 +278,106 @@ def test_created_event_with_failed_audit_commit_is_reconciled(monkeypatch):
     assert [(row["action"], row["outcome"]) for row in audit_rows] == [
         ("create", "success")
     ]
+    assert audit_rows[0]["details"] == {
+        "operation_id": pending["operation_id"]
+    }
+
+
+def test_write_timeout_stays_pending_and_reconciles_to_one_success(monkeypatch):
+    client, session, _, writer, restore = audit_client(monkeypatch)
+    stored = {}
+
+    def store_then_timeout(event, *, audit_operation_id):
+        stored.update(
+            game_id=event.game_id,
+            event_key=event.event_key,
+            _audit_operation_id=audit_operation_id,
+        )
+        raise ReadTimeoutError(
+            endpoint_url="https://dynamodb.example.invalid",
+            error=TimeoutError("synthetic response timeout"),
+        )
+
+    monkeypatch.setattr(main, "create_event", store_then_timeout)
+    try:
+        response = client.post(
+            "/events",
+            json=event_payload(),
+            headers={"Authorization": f"Bearer {writer}"},
+        )
+    finally:
+        restore()
+
+    assert response.status_code == 503
+    assert len([
+        row for row in session.persisted
+        if row["_table"] == "event_audit_outbox"
+    ]) == 1
+    assert not [
+        row for row in session.persisted if row["_table"] == "audit_logs"
+    ]
+
+    pending = next(
+        row for row in session.persisted
+        if row["_table"] == "event_audit_outbox"
+    )
+    operation = SimpleNamespace(
+        operation_id=pending["operation_id"],
+        actor_id=pending["actor_id"],
+        game_id=pending["game_id"],
+        event_key=pending["event_key"],
+    )
+    result = reconcile_operations(
+        session,
+        [operation],
+        fetch_event=lambda game_id, event_key, consistent_read: stored,
+    )
+
+    assert result == (1, 0, 0)
+    audit_rows = [
+        row for row in session.persisted if row["_table"] == "audit_logs"
+    ]
+    assert [(row["action"], row["outcome"]) for row in audit_rows] == [
+        ("create", "success")
+    ]
+
+
+def test_reconciler_continues_after_client_error_for_one_operation(capsys):
+    session = AuditSession()
+    operations = [
+        SimpleNamespace(
+            operation_id="first-operation",
+            actor_id="writer",
+            game_id=917,
+            event_key="first-event",
+        ),
+        SimpleNamespace(
+            operation_id="second-operation",
+            actor_id="writer",
+            game_id=918,
+            event_key="second-event",
+        ),
+    ]
+
+    def fetch_event(game_id, event_key, *, consistent_read):
+        if event_key == "first-event":
+            raise ClientError(
+                {"Error": {"Code": "InternalServerError", "Message": "retry"}},
+                "GetItem",
+            )
+        return {"_audit_operation_id": "second-operation"}
+
+    result = reconcile_operations(
+        session,
+        operations,
+        fetch_event=fetch_event,
+    )
+
+    assert result == (1, 0, 1)
+    assert "ClientError" in capsys.readouterr().err
+    audit_rows = [
+        row for row in session.persisted if row["_table"] == "audit_logs"
+    ]
+    assert len(audit_rows) == 1
+    assert audit_rows[0]["outcome"] == "success"
+    assert audit_rows[0]["action"] == "create"

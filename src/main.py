@@ -199,21 +199,10 @@ def post_event(
     try:
         created = create_event(event, audit_operation_id=operation_id)
     except (ClientError, BotoCoreError) as error:
-        try:
-            complete_event_audit(
-                db,
-                operation_id=operation_id,
-                actor_id=actor,
-                game_id=event.game_id,
-                event_key=event.event_key,
-                outcome="unavailable",
-            )
-        except (AuditPersistenceError, AuditOutboxStateError) as audit_error:
-            raise HTTPException(
-                503,
-                "Auditoría pendiente de reconciliación",
-            ) from audit_error
-        raise HTTPException(503, "DynamoDB no disponible") from error
+        raise HTTPException(
+            503,
+            "Resultado de escritura pendiente de reconciliación",
+        ) from error
     outcome = "success" if created else "conflict"
     try:
         complete_event_audit(

@@ -29,6 +29,11 @@ si DynamoDB crea el documento y luego falla PostgreSQL:
    `conflict` si existe otro documento con esa clave, o `unavailable` si no
    existe. Si alguno de los servicios sigue fallando, la fila queda pendiente
    para el siguiente intento.
+5. Si la llamada de escritura a DynamoDB termina con un error del SDK
+   (incluido un timeout con respuesta perdida), la API no cierra el outbox como
+   `unavailable`: el resultado de escritura es incierto y debe reconciliarse
+   contra el documento persistido. Solo se cierra como `unavailable` cuando una
+   lectura consistente de reconciliación confirma que el documento no existe.
 
 ## Cambios realizados
 
@@ -45,7 +50,8 @@ si DynamoDB crea el documento y luego falla PostgreSQL:
 - `src/nosql.py`: añade el ID de correlación interno al crear un evento y
   permite lecturas consistentes para la reconciliación.
 - `scripts/reconcile_event_audit.py`: reintenta completar auditorías pendientes
-  sin exponer claves ni mensajes de error.
+  sin exponer claves ni mensajes de error. Aísla errores por operación,
+  incluidos `ClientError` y `BotoCoreError`, para que el lote pueda continuar.
 - `alembic/versions/a909e501_m09_event_audit_outcomes.py`: actualiza el
   constraint de resultados. El downgrade se detiene si ya hay resultados M09
   que el constraint anterior no permitiría.
@@ -70,16 +76,39 @@ Comando de validación ejecutado:
 python -m pytest tests\test_m09_event_audit.py tests\test_event_access.py tests\test_m06_audit.py tests\test_m06_document_versions.py tests\test_m07_compat_read.py tests\test_m08_pagination_unit.py tests\test_m05_documental.py tests\test_main.py::test_get_events_queries_by_game tests\test_main.py::test_event_audit_override_is_removed_after_request tests\test_main.py::test_create_metric_does_not_return_generated_id -q --maxfail=1
 ```
 
-Resultado: **102 pruebas aprobadas**. Se observaron dos advertencias de
-deprecación de dependencias de prueba. También pasaron `compileall` para los
-archivos modificados y `git diff --check`. La prueba
+La suite completa `python -m pytest tests -q --maxfail=1` terminó con
+**197 pruebas aprobadas** y dos advertencias de deprecación de dependencias de
+prueba. También pasaron `compileall` para los archivos modificados y
+`git diff --check`. La prueba
 `test_created_event_with_failed_audit_commit_is_reconciled` simula un fallo del
 commit final después de crear en DynamoDB y comprueba que la intención pendiente
 se puede completar con el ID correlacionado.
 
-Las pruebas usan una sesión de auditoría simulada. No se validó la migración ni
-la consulta de registros contra una instancia real de PostgreSQL/DynamoDB, por
-lo que esa verificación queda pendiente de un entorno de integración disponible.
+Las migraciones hasta `b41c7d8e2f90` se aplicaron en PostgreSQL local 16 y se
+inicializó DynamoDB Local. En una prueba de integración, la escritura real del
+evento en DynamoDB se completó y luego se simuló la pérdida de respuesta: la API
+devolvió 503 y dejó el outbox pendiente. La reconciliación real encontró el
+marcador en DynamoDB y produjo exactamente un `success`, comprobado desde una
+conexión PostgreSQL administrativa separada. También se ejecutó el CLI del
+reconciliador con una operación sintética vencida; completó el outbox y dejó
+exactamente un registro consultable. Los eventos sintéticos de DynamoDB se
+eliminaron al finalizar.
+
+Se validó que un `ReadTimeoutError` después de que DynamoDB persiste el evento
+deja el outbox pendiente; la reconciliación produjo un único `success`.
+`ClientError` se probó en un lote de dos operaciones: la primera quedó pendiente
+y la segunda se completó correctamente. El CLI de reconciliación también se
+ejecutó contra la base local y encontró cero pendientes al final.
+
+También terminaron correctamente `scripts/m07_demo.py` (tabla aislada y
+eliminada al final) y `scripts/m08_benchmark.py --quick` (gate de resultados
+correctos aprobado). `scripts/disaster_recovery.py` pasó usando una tabla
+DynamoDB temporal dedicada: eliminó tres documentos sintéticos, restauró los
+cinco del fixture y luego se verificó y eliminó esa tabla.
+`scripts/verify_base.py` pasó sus validaciones M01-M08. No se ejecutó el target
+`make verify` literalmente porque su primer paso corre la recuperación sobre la
+tabla compartida y borra todos sus eventos; se ejecutaron los demás componentes
+por separado y la recuperación sobre una tabla desechable.
 
 ## Contrato de consulta para Persona 3
 
@@ -99,8 +128,8 @@ cabeceras no forman parte del registro.
 
 ## Estado de entrega
 
-La implementación inicial se publicó en los commits `bd99aca` y `ea623d3`.
-El outbox y su reconciliador son cambios posteriores todavía no confirmados en
-un commit. La aplicación de ambas migraciones en PostgreSQL real y la
-verificación extremo a extremo con DynamoDB siguen pendientes de un entorno de
-integración disponible.
+La implementación previa está publicada en `3c997a4`; las correcciones de
+timeout incierto, manejo de `ClientError`, sus pruebas y esta actualización del
+reporte están en el árbol de trabajo, sin commit todavía. La configuración
+`.env` se generó localmente desde `.env.example`, está ignorada por Git y solo
+usa credenciales sintéticas de Docker Local.

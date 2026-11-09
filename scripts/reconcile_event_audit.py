@@ -6,7 +6,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from botocore.exceptions import BotoCoreError
+from botocore.exceptions import BotoCoreError, ClientError
 from dotenv import load_dotenv
 from sqlalchemy import select
 
@@ -37,15 +37,52 @@ def parse_args() -> argparse.Namespace:
     return args
 
 
+def reconcile_operations(db, operations, *, fetch_event=get_event):
+    reconciled = 0
+    skipped = 0
+    pending_errors = 0
+
+    for operation in operations:
+        try:
+            stored_event = fetch_event(
+                operation.game_id,
+                operation.event_key,
+                consistent_read=True,
+            )
+            outcome = reconciled_event_outcome(
+                operation.operation_id,
+                stored_event,
+            )
+            complete_event_audit(
+                db,
+                operation_id=operation.operation_id,
+                actor_id=operation.actor_id,
+                game_id=operation.game_id,
+                event_key=operation.event_key,
+                outcome=outcome,
+            )
+            reconciled += 1
+        except AuditOutboxStateError:
+            db.rollback()
+            skipped += 1
+        except (AuditPersistenceError, BotoCoreError, ClientError) as error:
+            db.rollback()
+            print(
+                "Could not reconcile an event audit entry "
+                f"({type(error).__name__}); it remains pending.",
+                file=sys.stderr,
+            )
+            pending_errors += 1
+
+    return reconciled, skipped, pending_errors
+
+
 def main() -> int:
     args = parse_args()
     cutoff = datetime.now(timezone.utc) - timedelta(
         seconds=args.older_than_seconds
     )
     db = WriterSessionLocal()
-    reconciled = 0
-    skipped = 0
-    pending_errors = 0
     try:
         operations = db.scalars(
             select(EventAuditOutbox)
@@ -56,38 +93,10 @@ def main() -> int:
             .order_by(EventAuditOutbox.requested_at)
             .limit(args.limit)
         ).all()
-
-        for operation in operations:
-            try:
-                stored_event = get_event(
-                    operation.game_id,
-                    operation.event_key,
-                    consistent_read=True,
-                )
-                outcome = reconciled_event_outcome(
-                    operation.operation_id,
-                    stored_event,
-                )
-                complete_event_audit(
-                    db,
-                    operation_id=operation.operation_id,
-                    actor_id=operation.actor_id,
-                    game_id=operation.game_id,
-                    event_key=operation.event_key,
-                    outcome=outcome,
-                )
-                reconciled += 1
-            except AuditOutboxStateError:
-                db.rollback()
-                skipped += 1
-            except (AuditPersistenceError, BotoCoreError) as error:
-                db.rollback()
-                print(
-                    "Could not reconcile an event audit entry "
-                    f"({type(error).__name__}); it remains pending.",
-                    file=sys.stderr,
-                )
-                pending_errors += 1
+        reconciled, skipped, pending_errors = reconcile_operations(
+            db,
+            operations,
+        )
     finally:
         db.close()
 
